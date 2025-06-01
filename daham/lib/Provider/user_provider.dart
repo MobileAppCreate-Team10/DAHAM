@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:daham/Data/user.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class UserState extends ChangeNotifier {
   StreamSubscription? _userDocSub;

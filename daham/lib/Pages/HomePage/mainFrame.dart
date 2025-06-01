@@ -1,5 +1,6 @@
 import 'package:daham/Pages/Group/group_list_page.dart';
 import 'package:daham/Pages/HomePage/main_page.dart';
+import 'package:daham/Pages/User/my_page.dart';
 import 'package:daham/Pages/User/profile_setup.dart';
 import 'package:daham/Provider/appstate.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,12 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _select = 0;
 
-  final List<Widget> _pages = [MainPage(), GroupListPage()];
+  final List<Widget> _pages = [
+    MainPage(),
+    GroupListPage(),
+    ProfileDetailSetup(),
+    MyPage(),
+  ];
   final List<Widget?> _fab = [
     FloatingActionButton(onPressed: () {}),
     GroupFAB(),

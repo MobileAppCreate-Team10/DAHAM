@@ -71,6 +71,7 @@ class _DahamState extends State<Daham> {
     return Consumer<AppState>(
       builder: (context, state, _) {
         return MaterialApp(
+          debugShowCheckedModeBanner: false,
           supportedLocales: [Locale('en'), Locale('ko')],
           localizationsDelegates: [
             GlobalMaterialLocalizations.delegate,
