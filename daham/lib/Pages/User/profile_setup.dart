@@ -101,6 +101,10 @@ class _UserSubInfoState extends State<UserSubInfo> {
                   context,
                   listen: false,
                 ).registerUser(uid: uid, userName: 'test');
+                await Provider.of<AppState>(
+                  context,
+                  listen: false,
+                ).init(context);
               }
               Navigator.pushReplacementNamed(context, '/');
             },
