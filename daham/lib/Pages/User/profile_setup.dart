@@ -1,6 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:daham/Provider/appstate.dart';
 import 'package:daham/Provider/user_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -14,6 +15,7 @@ class ProfileSetup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: UserPageAppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -24,6 +26,31 @@ class ProfileSetup extends StatelessWidget {
   }
 }
 
+class UserPageAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  const UserPageAppBar({super.key, this.title = "프로필 설정"});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      title: Text(title),
+      centerTitle: true,
+      backgroundColor: Colors.blue,
+      elevation: 2,
+      actions: [
+        IconButton(
+          onPressed:
+              () => Provider.of<AppState>(context, listen: false).signOut(),
+          icon: Icon(Icons.logout),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
 class ProfileDetailSetup extends StatefulWidget {
   const ProfileDetailSetup({super.key});
 
@@ -32,15 +59,51 @@ class ProfileDetailSetup extends StatefulWidget {
 }
 
 class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
-  final _formKey = GlobalKey<FormState>(debugLabel: 'UserProfile');
+  final _formKey = GlobalKey<FormBuilderState>();
   final _userNameController = TextEditingController();
   final _introduceControlloer = TextEditingController();
   var _visibleSubInfo = false;
+  var _submitStep = false;
   @override
   Widget build(BuildContext context) {
+    ElevatedButton nextButton = ElevatedButton(
+      onPressed: () {
+        if (_formKey.currentState!.validate()) {
+          setState(() {
+            _visibleSubInfo = true;
+            _submitStep = true;
+          });
+        }
+      },
+      child: Text('Next'),
+    );
+    ElevatedButton submitButton = ElevatedButton(
+      onPressed: () async {
+        if (_formKey.currentState?.saveAndValidate() ?? false) {
+          final values = _formKey.currentState!.value;
+          print(values['interests']);
+          final avatarJson = await FluttermojiFunctions().encodeMySVGtoString();
+          final appState = Provider.of<AppState>(context, listen: false);
+          final uid = appState.user?.uid;
+          if (uid != null) {
+            await Provider.of<UserState>(context, listen: false).registerUser(
+              bio: _introduceControlloer.text,
+              uid: uid,
+              userName: _userNameController.text,
+              avatarJson: avatarJson,
+              interest: values['interests'], // Pass the selected interests
+            );
+          }
+          appState.init(context);
+
+          print(avatarJson);
+        }
+      },
+      child: Text('Submit'),
+    );
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Form(
+      child: FormBuilder(
         key: _formKey,
         child: Column(
           children: [
@@ -69,7 +132,7 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
               decoration: InputDecoration(label: Text('UserName')),
               validator: FormBuilderValidators.compose([
                 FormBuilderValidators.required(),
-                FormBuilderValidators.minLength(3),
+                FormBuilderValidators.minLength(2),
               ]),
               controller: _userNameController,
             ),
@@ -80,15 +143,9 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
             ),
             SizedBox(height: 54),
             SubInfoSector(visibleSubInfo: _visibleSubInfo, formKey: _formKey),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  setState(() {
-                    _visibleSubInfo = true;
-                  });
-                }
-              },
-              child: Text('Next'),
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
+              child: _submitStep ? submitButton : nextButton,
             ),
           ],
         ),
@@ -105,7 +162,7 @@ class SubInfoSector extends StatelessWidget {
   }) : _visibleSubInfo = visibleSubInfo;
 
   final bool _visibleSubInfo;
-  final GlobalKey<FormState> formKey;
+  final GlobalKey<FormBuilderState> formKey;
   @override
   Widget build(BuildContext context) {
     return Visibility(
@@ -118,8 +175,7 @@ class SubInfoSector extends StatelessWidget {
             options: [
               FormBuilderChipOption(value: 'Exercise', child: Text('운동')),
               FormBuilderChipOption(value: 'Music', child: Text('음악')),
-              FormBuilderChipOption(value: 'Trip', child: Text('여행')),
-              FormBuilderChipOption(value: 'Book', child: Text('독서')),
+              FormBuilderChipOption(value: 'Coding', child: Text('코딩')),
               FormBuilderChipOption(
                 value: 'Self-Develope',
                 child: Text('자기계발'),
@@ -147,103 +203,6 @@ class ProfileAvatar extends StatelessWidget {
         FluttermojiCircleAvatar(radius: 60),
         if (custom == true) FluttermojiCustomizer(),
       ],
-    );
-  }
-}
-
-class UserSubInfo extends StatefulWidget {
-  final dynamic userName;
-
-  const UserSubInfo({super.key, required this.userName});
-
-  @override
-  State<UserSubInfo> createState() => _UserSubInfoState();
-}
-
-class _UserSubInfoState extends State<UserSubInfo> {
-  final _formKey = GlobalKey<FormBuilderState>();
-  var options = ["Option 1", "Option 2", "Option 3"];
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          TextButton(
-            // REGISTER USER
-            onPressed: () async {
-              final uid =
-                  Provider.of<AppState>(context, listen: false).user?.uid;
-              if (uid != null) {
-                await Provider.of<UserState>(
-                  context,
-                  listen: false,
-                ).registerUser(uid: uid, userName: widget.userName);
-              }
-              Navigator.pushReplacementNamed(context, '/');
-            },
-            child: Text('skip'),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: FormBuilder(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('sub info'),
-                FormBuilderRadioGroup(
-                  name: '',
-                  options:
-                      options
-                          .map(
-                            (option) => FormBuilderFieldOption(
-                              value: option,
-                              child: Text(option),
-                            ),
-                          )
-                          .toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class DynamicOptionFormField extends StatelessWidget {
-  const DynamicOptionFormField({super.key, required this.options});
-
-  final List<String> options;
-
-  @override
-  Widget build(BuildContext context) {
-    return FormBuilderField(
-      builder: (FormFieldState<dynamic> field) {
-        return InputDecorator(
-          decoration: InputDecoration(
-            labelText: "Select option",
-            contentPadding: EdgeInsets.only(top: 10.0, bottom: 0.0),
-            border: InputBorder.none,
-            errorText: field.errorText,
-          ),
-          child: SizedBox(
-            height: 200,
-            child: CupertinoPicker(
-              itemExtent: 30,
-              children: options.map((c) => Text(c)).toList(),
-              onSelectedItemChanged: (index) {
-                field.didChange(options[index]);
-              },
-            ),
-          ),
-        );
-      },
-      name: 'name',
     );
   }
 }
