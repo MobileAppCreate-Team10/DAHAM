@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:daham/Data/user.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class UserState extends ChangeNotifier {
   StreamSubscription? _userDocSub;
@@ -32,18 +30,20 @@ class UserState extends ChangeNotifier {
   Future<void> registerUser({
     required String uid,
     required String userName,
-    String? description,
+    String? bio,
     int? age,
     List<String>? interest,
+    required dynamic avatarJson,
   }) async {
     await FirebaseFirestore.instance.collection('users').doc(uid).set({
       'uid': uid,
       'userName': userName,
-      'description': description ?? '',
+      'bio': bio ?? '',
       'age': age,
       'interest': interest ?? [],
       'followerCount': 0,
       'followingCount': 0,
+      'avatarJson': avatarJson ?? '',
       // 필요시 추가 필드
     });
   }

@@ -1,7 +1,10 @@
 import 'package:daham/Data/todo.dart';
+import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:fluttermoji/fluttermoji.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -132,18 +135,22 @@ class _MainPageState extends State<MainPage> {
       child: Column(
         children: [
           // 상단 사용자 정보
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 24,
-                  backgroundImage: AssetImage('assets/user.png'),
+          Consumer<UserState>(
+            builder: (context, userState, _) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    FluttermojiCircleAvatar(radius: 30),
+                    const SizedBox(width: 12),
+                    Text(
+                      userState.userData['userName'],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                const Text('사용자명', style: TextStyle(fontSize: 16)),
-              ],
-            ),
+              );
+            },
           ),
           // 달력
           TableCalendar(

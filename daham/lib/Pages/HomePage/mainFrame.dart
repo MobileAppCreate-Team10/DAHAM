@@ -1,5 +1,6 @@
 import 'package:daham/Pages/Group/group_list_page.dart';
 import 'package:daham/Pages/HomePage/main_page.dart';
+import 'package:daham/Pages/User/my_page.dart';
 import 'package:daham/Pages/User/profile_setup.dart';
 import 'package:daham/Provider/appstate.dart';
 import 'package:flutter/material.dart';
@@ -15,12 +16,26 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _select = 0;
 
-  final List<Widget> _pages = [MainPage(), GroupListPage()];
+  final List<Widget> _pages = [
+    MainPage(),
+    GroupListPage(),
+    MyPage(),
+    ProfileDetailSetup(),
+  ];
   final List<Widget?> _fab = [
     FloatingActionButton(onPressed: () {}),
     GroupFAB(),
     null,
+    null,
   ];
+
+  final List<PreferredSizeWidget?> _appBar = [
+    null,
+    null,
+    null,
+    UserPageAppBar(),
+  ];
+
   void _onTap(int index) {
     setState(() {
       _select = index;
@@ -33,6 +48,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       builder: (context, appState, _) {
         return appState.newAccount == false
             ? Scaffold(
+              appBar: _appBar[_select],
               body: IndexedStack(index: _select, children: _pages),
               bottomNavigationBar: BottomNav(
                 currentIndex: _select,
@@ -54,12 +70,16 @@ class BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
+      type: BottomNavigationBarType.shifting,
       currentIndex: currentIndex,
       onTap: onTap,
+      selectedItemColor: Colors.blue,
+      unselectedItemColor: Colors.grey,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'home'),
-        BottomNavigationBarItem(icon: Icon(Icons.group), label: 'group'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'My'),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
+        BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
+        BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
       ],
     );
   }
