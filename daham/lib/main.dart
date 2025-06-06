@@ -1,10 +1,8 @@
 import 'package:daham/Pages/HomePage/mainFrame.dart';
-import 'package:daham/Provider/appstate.dart';
 import 'package:daham/Pages/Group/group_list_page.dart';
 import 'package:daham/Pages/Login/login.dart';
 import 'package:daham/Pages/User/profile_setup.dart';
-import 'package:daham/Provider/group_provider.dart';
-import 'package:daham/Provider/user_provider.dart';
+import 'package:daham/Provider/export.dart';
 import 'package:daham/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +17,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => AppState()),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
         ChangeNotifierProvider(create: (_) => UserState()),
+        ChangeNotifierProvider(create: (_) => TodoState()),
       ],
       child: const RootApp(),
     ),
@@ -79,6 +78,7 @@ class _DahamState extends State<Daham> {
             GlobalCupertinoLocalizations.delegate,
             FormBuilderLocalizations.delegate,
           ],
+
           home: state.login != true ? Login() : MainScaffold(),
           routes: {
             '/profileSetting': (context) => ProfileSetup(),
