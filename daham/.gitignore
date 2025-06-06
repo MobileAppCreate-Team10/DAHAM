@@ -200,4 +200,4 @@ fabric.properties
 !/gradle/wrapper/gradle-wrapper.jar
 
 ### api file ###
-api_key.env
+*.env
