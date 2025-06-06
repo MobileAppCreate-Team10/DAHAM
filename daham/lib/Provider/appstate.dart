@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:daham/Provider/todo_provider.dart';
 import 'package:daham/Provider/user_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
@@ -22,11 +23,14 @@ class AppState extends ChangeNotifier {
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       _user = user;
       _login = user != null;
+      notifyListeners();
 
       final userState = Provider.of<UserState>(context, listen: false);
-
+      final todoState = Provider.of<TodoState>(context, listen: false);
       if (user != null) {
+        print(_login);
         userState.listenUserDoc(user.uid);
+        // todoState.listenTodoData(user.uid);
         final userDoc =
             await FirebaseFirestore.instance
                 .collection('users')
