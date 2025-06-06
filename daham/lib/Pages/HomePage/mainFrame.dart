@@ -1,5 +1,5 @@
 import 'package:daham/Pages/Group/group_list_page.dart';
-import 'package:daham/Pages/HomePage/main_page.dart';
+import 'package:daham/Pages/HomePage/userMain_Todo.dart';
 import 'package:daham/Pages/User/my_page.dart';
 import 'package:daham/Pages/User/profile_setup.dart';
 import 'package:daham/Provider/appstate.dart';
@@ -22,12 +22,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     MyPage(),
     ProfileDetailSetup(),
   ];
-  final List<Widget?> _fab = [
-    FloatingActionButton(onPressed: () {}),
-    GroupFAB(),
-    null,
-    null,
-  ];
+  final List<Widget?> _fab = [UserTodoFAB(), GroupFAB(), null, null];
 
   final List<PreferredSizeWidget?> _appBar = [
     null,

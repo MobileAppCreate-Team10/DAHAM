@@ -14,26 +14,13 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // 필수
+  WidgetsFlutterBinding.ensureInitialized();
+  final geminiProvider = GeminiProvider();
   try {
-    print("test");
     await dotenv.load(fileName: ".env");
-    print('dotenv loaded successfully');
-    print('GEMINI_API_KEY: ${dotenv.env['GEMINI_API_KEY']}'); // 필요시 확인
-  } catch (e) {
-    print('Main Failed to load .env file: $e');
-    // 여기서 오류 발생 시 runApp이 호출되지 않을 수 있습니다.
-  }
-
-  // GeminiProvider 인스턴스 생성 및 API 키 로드
-  final geminiProvider = GeminiProvider(); // GeminiProvider 정의를 확인해야 합니다.
-  try {
     await geminiProvider.loadApiKey(); // 이 부분이 성공적으로 완료되어야 합니다.
     print('GeminiProvider API key loaded successfully');
-  } catch (e) {
-    print('Failed to load GeminiProvider API key: $e');
-    // 여기서 오류 발생 시 runApp이 호출되지 않을 수 있습니다.
-  }
+  } catch (e) {}
 
   runApp(
     MultiProvider(
