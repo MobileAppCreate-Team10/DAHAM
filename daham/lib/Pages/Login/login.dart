@@ -29,7 +29,7 @@ class _LoginState extends State<Login> {
       await FirebaseAuth.instance.signInWithCredential(credential);
 
       // ignore: use_build_context_synchronously
-      Navigator.of(context).pushReplacementNamed('/');
+      // Navigator.of(context).pushReplacementNamed('/');
     } catch (e) {
       //TODO : MessageBox - login error
     }
@@ -38,7 +38,7 @@ class _LoginState extends State<Login> {
   Future<void> _signInAnonymous(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signInAnonymously();
-      Navigator.of(context).popAndPushNamed('/');
+      // Navigator.of(context).popAndPushNamed('/');
     } catch (e) {
       ScaffoldMessenger.of(
         context,

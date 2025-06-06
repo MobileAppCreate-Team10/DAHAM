@@ -1,10 +1,14 @@
+// ignore: file_names
 import 'package:daham/Data/todo.dart';
+import 'package:daham/Func/gemini_assistant.dart';
+import 'package:daham/Provider/export.dart';
 import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:fluttermoji/fluttermoji.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -29,104 +33,6 @@ class _MainPageState extends State<MainPage> {
     if (todos.isEmpty) return 0.0;
     final completed = todos.where((t) => t.checked).length;
     return completed / todos.length;
-  }
-
-  void _showAddTodoDialog() {
-    String newTitle = '';
-    String newDescription = '';
-    String newCategory = '';
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: const Text('새로운 리스트 생성'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('제목'),
-                  TextField(
-                    decoration: const InputDecoration(hintText: '제목을 작성해주세요.'),
-                    onChanged: (value) => newTitle = value,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('날짜'),
-                            Text("${_selectedDate.toLocal()}".split(' ')[0]),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.calendar_today),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _selectedDate,
-                            firstDate: DateTime(2000),
-                            lastDate: DateTime(2100),
-                          );
-                          if (picked != null && picked != _selectedDate) {
-                            setState(() {
-                              _selectedDate = picked;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          decoration: const InputDecoration(
-                            labelText: 'Category',
-                          ),
-                          onChanged: (value) => newCategory = value,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('설명'),
-                  TextField(
-                    decoration: const InputDecoration(hintText: '제목을 작성해주세요.'),
-                    onChanged: (value) => newDescription = value,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (newTitle.isNotEmpty) {
-                    setState(() {
-                      todos.add(
-                        TodoItemData(
-                          title: newTitle,
-                          subtitle: newDescription,
-                          checked: false,
-                        ),
-                      );
-                    });
-                  }
-                  Navigator.pop(context);
-                },
-                child: const Text('생성'),
-              ),
-            ],
-          ),
-    );
   }
 
   @override
@@ -167,7 +73,7 @@ class _MainPageState extends State<MainPage> {
             calendarFormat: CalendarFormat.week,
             headerVisible: false,
           ),
-          // 퍼센트 인디케이터
+          SizedBox(height: 20),
           CircularPercentIndicator(
             radius: 60.0,
             lineWidth: 12.0,
@@ -182,6 +88,7 @@ class _MainPageState extends State<MainPage> {
           ),
           const SizedBox(height: 16),
           // 할 일 목록
+          SizedBox(height: 30),
           Expanded(
             child: ListView.builder(
               itemCount: todos.length,
@@ -215,6 +122,60 @@ class _MainPageState extends State<MainPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class UserTodoFAB extends StatelessWidget {
+  const UserTodoFAB({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final geminiApiKey =
+        Provider.of<GeminiProvider>(listen: false, context).geminiApiKey;
+    return SpeedDial(
+      icon: Icons.add,
+      activeIcon: Icons.close,
+      activeBackgroundColor: const Color.fromARGB(255, 0, 0, 0),
+      children: [
+        SpeedDialChild(
+          child: Icon(Icons.edit),
+          label: '직접 추가',
+          onTap: () {
+            showDialog(
+              context: context,
+              builder:
+                  (_) => AlertDialog(
+                    title: Text('TO DO'),
+                    content: TextFormField(
+                      decoration: InputDecoration(label: Text('Title')),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text('닫기'),
+                      ),
+                    ],
+                  ),
+            );
+          },
+        ),
+        SpeedDialChild(
+          child: Icon(Icons.auto_awesome),
+          label: 'AI assiant',
+          onTap: () async {
+            if (geminiApiKey == null)
+              print("NULL");
+            else {
+              final testInput = "내일 오후 3시 팀플 준비";
+              final assistant = GeminiTodoAssistant();
+              final todoJson = await assistant.parseTaskFromChat(testInput);
+
+              print(todoJson);
+            }
+          },
+        ),
+      ],
     );
   }
 }
