@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class TodoItemData {
   final String title;
   final String subtitle;
@@ -40,5 +38,15 @@ class PersonalTodoItem {
       priority: map['priority'] ?? 'Low',
       details: map['details'],
     );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'task': task,
+      'due_date': dueDate,
+      'complete': complete,
+      'priority': priority,
+      if (details != null) 'details': details,
+    };
   }
 }

@@ -1,9 +1,7 @@
 // ignore: file_names
 import 'package:daham/Data/todo.dart';
-import 'package:daham/Func/gemini_assistant.dart';
 import 'package:daham/Pages/test/assistant_chat.dart';
 import 'package:daham/Provider/export.dart';
-import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
@@ -38,28 +36,26 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    final todoList = Provider.of<TodoState>(context).todoList;
+    final todoData = Provider.of<TodoState>(context);
+    final userState = Provider.of<UserState>(context);
+    final todoList = todoData.todoList;
 
     return SafeArea(
       child: Column(
         children: [
           // 상단 사용자 정보
-          Consumer<UserState>(
-            builder: (context, userState, _) {
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    FluttermojiCircleAvatar(radius: 30),
-                    const SizedBox(width: 12),
-                    Text(
-                      userState.userData['userName'],
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                FluttermojiCircleAvatar(radius: 30),
+                const SizedBox(width: 12),
+                Text(
+                  userState.userData['userName'],
+                  style: const TextStyle(fontSize: 16),
                 ),
-              );
-            },
+              ],
+            ),
           ),
           // 달력
           TableCalendar(
@@ -98,45 +94,24 @@ class _MainPageState extends State<MainPage> {
                 itemCount: todoList.length,
                 itemBuilder: (context, index) {
                   final todo = todoList[index];
-                  return CheckboxListTile(
-                    value: todo.complete,
-                    title: Text(todo.task),
-                    onChanged: (value) {},
+                  return GestureDetector(
+                    onLongPress: () {
+                      print('수정하기');
+                    },
+                    child: CheckboxListTile(
+                      value: todo.complete,
+                      title: Text(todo.task),
+                      onChanged: (value) {
+                        todoData.changeCompleteTodo(
+                          userState.userData['uid'],
+                          todo.id,
+                        );
+                      },
+                    ),
                   );
                 },
               ),
             ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: todos.length,
-              itemBuilder: (context, index) {
-                final todo = todos[index];
-                return CheckboxListTile(
-                  title: Text(
-                    todo.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    todo.subtitle,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  value: todo.checked,
-                  onChanged: (value) {
-                    setState(() {
-                      todos[index] = TodoItemData(
-                        title: todo.title,
-                        subtitle: todo.subtitle,
-                        checked: value ?? false,
-                      );
-                    });
-                  },
-                );
-              },
-            ),
-          ),
         ],
       ),
     );

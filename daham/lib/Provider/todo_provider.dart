@@ -13,12 +13,13 @@ class TodoState extends ChangeNotifier {
   List<PersonalTodoItem>? get todoList => _todoList;
 
   void listenTodoData(String uid) {
-    print('listenTodoData called with uid: $uid');
     _userTodoSub?.cancel();
     _userTodoSub = FirebaseFirestore.instance
         .collection('UserTodo')
         .doc(uid)
         .collection('todos')
+        .orderBy('created_at', descending: true)
+        .limit(100)
         .snapshots()
         .listen((querySnapshots) {
           _todoList =
@@ -34,6 +35,18 @@ class TodoState extends ChangeNotifier {
     _userTodoSub?.cancel();
     _userTodoSub = null;
     _todoList = null;
+    notifyListeners();
+  }
+
+  Future<void> changeCompleteTodo(String uid, String todoId) async {
+    final docRef = FirebaseFirestore.instance
+        .collection('UserTodo')
+        .doc(uid)
+        .collection('todos')
+        .doc(todoId);
+    final snapshot = await docRef.get();
+    final currentComplete = snapshot.data()?['complete'] ?? false;
+    await docRef.update({'complete': !currentComplete});
     notifyListeners();
   }
 
