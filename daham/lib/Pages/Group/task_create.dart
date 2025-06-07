@@ -62,7 +62,7 @@ class _TaskCreateModalState extends State<TaskCreateModal> {
                     });
                   },
                 );
-              }).toList(),
+              }),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {

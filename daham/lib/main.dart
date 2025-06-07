@@ -1,24 +1,38 @@
+import 'dart:io';
+
 import 'package:daham/Pages/HomePage/mainFrame.dart';
-import 'package:daham/Provider/appstate.dart';
 import 'package:daham/Pages/Group/group_list_page.dart';
 import 'package:daham/Pages/Login/login.dart';
 import 'package:daham/Pages/User/profile_setup.dart';
-import 'package:daham/Provider/group_provider.dart';
-import 'package:daham/Provider/user_provider.dart';
+import 'package:daham/Provider/export.dart';
 import 'package:daham/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final geminiProvider = GeminiProvider();
+  try {
+    await dotenv.load(fileName: ".env");
+    await geminiProvider.loadApiKey(); // 이 부분이 성공적으로 완료되어야 합니다.
+    print('GeminiProvider API key loaded successfully');
+  } catch (e) {}
+
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(
+          value: geminiProvider,
+        ), // API 키가 로드된 Provider
         ChangeNotifierProvider(create: (_) => AppState()),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
         ChangeNotifierProvider(create: (_) => UserState()),
+        ChangeNotifierProvider(create: (_) => TodoState()),
+        // 만약 SettingsProvider를 사용한다면 여기에 추가
       ],
       child: const RootApp(),
     ),
@@ -71,6 +85,7 @@ class _DahamState extends State<Daham> {
     return Consumer<AppState>(
       builder: (context, state, _) {
         return MaterialApp(
+          debugShowCheckedModeBanner: false,
           supportedLocales: [Locale('en'), Locale('ko')],
           localizationsDelegates: [
             GlobalMaterialLocalizations.delegate,
@@ -78,11 +93,11 @@ class _DahamState extends State<Daham> {
             GlobalCupertinoLocalizations.delegate,
             FormBuilderLocalizations.delegate,
           ],
+
           home: state.login != true ? Login() : MainScaffold(),
           routes: {
             '/profileSetting': (context) => ProfileSetup(),
             '/sign': (context) => Login(),
-            // '/': (context) => HomePage(),
             '/group': (context) => GroupListPage(),
           },
         );

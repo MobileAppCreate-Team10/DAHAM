@@ -1,10 +1,13 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:daham/Provider/appstate.dart';
 import 'package:daham/Provider/user_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:provider/provider.dart';
+import 'package:fluttermoji/fluttermoji.dart';
+import 'package:awesome_dialog/awesome_dialog.dart';
 
 class ProfileSetup extends StatelessWidget {
   const ProfileSetup({super.key});
@@ -12,62 +15,137 @@ class ProfileSetup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: UserPageAppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [Text('profile_setup'), UserInfoTextForm()],
+          children: [Text('profile_setup'), ProfileDetailSetup()],
         ),
       ),
     );
   }
 }
 
-class UserInfoTextForm extends StatefulWidget {
-  const UserInfoTextForm({super.key});
+class UserPageAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  const UserPageAppBar({super.key, this.title = "프로필 설정"});
 
-  @override
-  State<UserInfoTextForm> createState() => _UserInfoTextFormState();
-}
-
-class _UserInfoTextFormState extends State<UserInfoTextForm> {
-  final _formKey = GlobalKey<FormState>(debugLabel: 'UserProfile');
-  final _userNameController = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    return AppBar(
+      title: Text(title),
+      centerTitle: true,
+      backgroundColor: Colors.blue,
+      elevation: 2,
+      actions: [
+        IconButton(
+          onPressed:
+              () => Provider.of<AppState>(context, listen: false).signOut(),
+          icon: Icon(Icons.logout),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class ProfileDetailSetup extends StatefulWidget {
+  const ProfileDetailSetup({super.key});
+
+  @override
+  State<ProfileDetailSetup> createState() => _ProfileDetailSetupState();
+}
+
+class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
+  final _formKey = GlobalKey<FormBuilderState>();
+  final _userNameController = TextEditingController();
+  final _introduceControlloer = TextEditingController();
+  var _visibleSubInfo = false;
+  var _submitStep = false;
+  @override
+  Widget build(BuildContext context) {
+    ElevatedButton nextButton = ElevatedButton(
+      onPressed: () {
+        if (_formKey.currentState!.validate()) {
+          setState(() {
+            _visibleSubInfo = true;
+            _submitStep = true;
+          });
+        }
+      },
+      child: Text('Next'),
+    );
+    ElevatedButton submitButton = ElevatedButton(
+      onPressed: () async {
+        if (_formKey.currentState?.saveAndValidate() ?? false) {
+          final values = _formKey.currentState!.value;
+          print(values['interests']);
+          final avatarJson = await FluttermojiFunctions().encodeMySVGtoString();
+          final appState = Provider.of<AppState>(context, listen: false);
+          final uid = appState.user?.uid;
+          if (uid != null) {
+            await Provider.of<UserState>(context, listen: false).registerUser(
+              bio: _introduceControlloer.text,
+              uid: uid,
+              userName: _userNameController.text,
+              avatarJson: avatarJson,
+              interest: values['interests'], // Pass the selected interests
+            );
+          }
+          appState.init(context);
+
+          print(avatarJson);
+        }
+      },
+      child: Text('Submit'),
+    );
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Form(
+      child: FormBuilder(
         key: _formKey,
         child: Column(
           children: [
-            Consumer<AppState>(
-              builder: (context, appState, child) {
-                return Text('AppState: ${appState.user?.uid.toString()}');
-              },
+            SizedBox(height: 50),
+            GestureDetector(
+              onTap:
+                  () => {
+                    AwesomeDialog(
+                      context: context,
+                      dialogType: DialogType.noHeader,
+                      body: Column(
+                        children: [
+                          SizedBox(height: 30),
+                          ProfileAvatar(custom: true),
+                        ],
+                      ),
+                      borderSide: const BorderSide(
+                        color: Colors.green,
+                        width: 2,
+                      ),
+                    ).show(),
+                  },
+              child: ProfileAvatar(custom: false),
             ),
             TextFormField(
               decoration: InputDecoration(label: Text('UserName')),
               validator: FormBuilderValidators.compose([
                 FormBuilderValidators.required(),
-                FormBuilderValidators.minLength(3),
+                FormBuilderValidators.minLength(2),
               ]),
               controller: _userNameController,
             ),
             SizedBox(height: 12),
             TextFormField(
               decoration: InputDecoration(label: Text('Introduce')),
+              controller: _introduceControlloer,
             ),
             SizedBox(height: 54),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => UserSubInfo()),
-                  );
-                }
-              },
-              child: Text('Next'),
+            SubInfoSector(visibleSubInfo: _visibleSubInfo, formKey: _formKey),
+            Padding(
+              padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
+              child: _submitStep ? submitButton : nextButton,
             ),
           ],
         ),
@@ -76,97 +154,55 @@ class _UserInfoTextFormState extends State<UserInfoTextForm> {
   }
 }
 
-class UserSubInfo extends StatefulWidget {
-  const UserSubInfo({super.key});
+class SubInfoSector extends StatelessWidget {
+  const SubInfoSector({
+    super.key,
+    required bool visibleSubInfo,
+    required this.formKey,
+  }) : _visibleSubInfo = visibleSubInfo;
 
-  @override
-  State<UserSubInfo> createState() => _UserSubInfoState();
-}
-
-class _UserSubInfoState extends State<UserSubInfo> {
-  final _formKey = GlobalKey<FormBuilderState>();
-  var options = ["Option 1", "Option 2", "Option 3"];
+  final bool _visibleSubInfo;
+  final GlobalKey<FormBuilderState> formKey;
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          TextButton(
-            // REGISTER USER
-            onPressed: () async {
-              final uid =
-                  Provider.of<AppState>(context, listen: false).user?.uid;
-              if (uid != null) {
-                await Provider.of<UserState>(
-                  context,
-                  listen: false,
-                ).registerUser(uid: uid, userName: 'test');
-              }
-              Navigator.pushReplacementNamed(context, '/');
-            },
-            child: Text('skip'),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: FormBuilder(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('sub info'),
-                FormBuilderRadioGroup(
-                  name: '',
-                  options:
-                      options
-                          .map(
-                            (option) => FormBuilderFieldOption(
-                              value: option,
-                              child: Text(option),
-                            ),
-                          )
-                          .toList(),
-                ),
-              ],
+    return Visibility(
+      visible: _visibleSubInfo,
+      child: Column(
+        children: [
+          FormBuilderCheckboxGroup<String>(
+            name: 'interests',
+            decoration: InputDecoration(labelText: '관심있는 사항을 모두 선택하세요'),
+            options: [
+              FormBuilderChipOption(value: 'Exercise', child: Text('운동')),
+              FormBuilderChipOption(value: 'Music', child: Text('음악')),
+              FormBuilderChipOption(value: 'Coding', child: Text('코딩')),
+              FormBuilderChipOption(
+                value: 'Self-Develope',
+                child: Text('자기계발'),
+              ),
+            ],
+            validator: FormBuilderValidators.minLength(
+              1,
+              errorText: '최소 1개 이상 선택하세요',
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class DynamicOptionFormField extends StatelessWidget {
-  const DynamicOptionFormField({super.key, required this.options});
+class ProfileAvatar extends StatelessWidget {
+  final bool custom;
 
-  final List<String> options;
-
+  const ProfileAvatar({super.key, required this.custom});
   @override
   Widget build(BuildContext context) {
-    return FormBuilderField(
-      builder: (FormFieldState<dynamic> field) {
-        return InputDecorator(
-          decoration: InputDecoration(
-            labelText: "Select option",
-            contentPadding: EdgeInsets.only(top: 10.0, bottom: 0.0),
-            border: InputBorder.none,
-            errorText: field.errorText,
-          ),
-          child: Container(
-            height: 200,
-            child: CupertinoPicker(
-              itemExtent: 30,
-              children: options.map((c) => Text(c)).toList(),
-              onSelectedItemChanged: (index) {
-                field.didChange(options[index]);
-              },
-            ),
-          ),
-        );
-      },
-      name: 'name',
+    return Column(
+      children: [
+        FluttermojiCircleAvatar(radius: 60),
+        if (custom == true) FluttermojiCustomizer(),
+      ],
     );
   }
 }
