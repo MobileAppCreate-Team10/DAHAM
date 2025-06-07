@@ -32,6 +32,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   ];
 
   void _onTap(int index) {
+    if (Navigator.canPop(context)) Navigator.pop(context);
     setState(() {
       _select = index;
     });
