@@ -1,8 +1,7 @@
 // ignore: file_names
 import 'package:daham/Data/todo.dart';
-import 'package:daham/Func/gemini_assistant.dart';
+import 'package:daham/Pages/test/assistant_chat.dart';
 import 'package:daham/Provider/export.dart';
-import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:provider/provider.dart';
@@ -37,26 +36,26 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final todoData = Provider.of<TodoState>(context);
+    final userState = Provider.of<UserState>(context);
+    final todoList = todoData.todoList;
+
     return SafeArea(
       child: Column(
         children: [
           // 상단 사용자 정보
-          Consumer<UserState>(
-            builder: (context, userState, _) {
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    FluttermojiCircleAvatar(radius: 30),
-                    const SizedBox(width: 12),
-                    Text(
-                      userState.userData['userName'],
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                FluttermojiCircleAvatar(radius: 30),
+                const SizedBox(width: 12),
+                Text(
+                  userState.userData['userName'],
+                  style: const TextStyle(fontSize: 16),
                 ),
-              );
-            },
+              ],
+            ),
           ),
           // 달력
           TableCalendar(
@@ -89,93 +88,115 @@ class _MainPageState extends State<MainPage> {
           const SizedBox(height: 16),
           // 할 일 목록
           SizedBox(height: 30),
-          Expanded(
-            child: ListView.builder(
-              itemCount: todos.length,
-              itemBuilder: (context, index) {
-                final todo = todos[index];
-                return CheckboxListTile(
-                  title: Text(
-                    todo.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+          if (todoList != null)
+            Expanded(
+              child: ListView.builder(
+                itemCount: todoList.length,
+                itemBuilder: (context, index) {
+                  final todo = todoList[index];
+                  return GestureDetector(
+                    onLongPress: () {
+                      print('수정하기');
+                    },
+                    child: CheckboxListTile(
+                      value: todo.complete,
+                      title: Text(todo.task),
+                      onChanged: (value) {
+                        todoData.changeCompleteTodo(
+                          userState.userData['uid'],
+                          todo.id,
+                        );
+                      },
                     ),
-                  ),
-                  subtitle: Text(
-                    todo.subtitle,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  value: todo.checked,
-                  onChanged: (value) {
-                    setState(() {
-                      todos[index] = TodoItemData(
-                        title: todo.title,
-                        subtitle: todo.subtitle,
-                        checked: value ?? false,
-                      );
-                    });
-                  },
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-class UserTodoFAB extends StatelessWidget {
+class UserTodoFAB extends StatefulWidget {
   const UserTodoFAB({super.key});
+
+  @override
+  State<UserTodoFAB> createState() => _UserTodoFABState();
+}
+
+class _UserTodoFABState extends State<UserTodoFAB> {
+  bool _canelFAB = false;
 
   @override
   Widget build(BuildContext context) {
     final geminiApiKey =
         Provider.of<GeminiProvider>(listen: false, context).geminiApiKey;
-    return SpeedDial(
-      icon: Icons.add,
-      activeIcon: Icons.close,
-      activeBackgroundColor: const Color.fromARGB(255, 0, 0, 0),
-      children: [
-        SpeedDialChild(
-          child: Icon(Icons.edit),
-          label: '직접 추가',
-          onTap: () {
-            showDialog(
-              context: context,
-              builder:
-                  (_) => AlertDialog(
-                    title: Text('TO DO'),
-                    content: TextFormField(
-                      decoration: InputDecoration(label: Text('Title')),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text('닫기'),
-                      ),
-                    ],
-                  ),
-            );
-          },
-        ),
-        SpeedDialChild(
-          child: Icon(Icons.auto_awesome),
-          label: 'AI assiant',
-          onTap: () async {
-            if (geminiApiKey == null)
-              print("NULL");
-            else {
-              final testInput = "내일 오후 3시 팀플 준비";
-              final assistant = GeminiTodoAssistant();
-              final todoJson = await assistant.parseTaskFromChat(testInput);
 
-              print(todoJson);
-            }
+    final uid = Provider.of<UserState>(listen: false, context).userData['uid'];
+
+    return _canelFAB != true
+        ? SpeedDial(
+          icon: Icons.add,
+          activeIcon: Icons.close,
+          activeBackgroundColor: const Color.fromARGB(255, 0, 0, 0),
+          children: [
+            SpeedDialChild(
+              child: Icon(Icons.edit),
+              label: '직접 추가',
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder:
+                      (_) => AlertDialog(
+                        title: Text('TO DO'),
+                        content: TextFormField(
+                          decoration: InputDecoration(label: Text('Title')),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text('닫기'),
+                          ),
+                        ],
+                      ),
+                );
+              },
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.auto_awesome),
+              label: 'AI assiant',
+              onTap: () async {
+                if (geminiApiKey == null) {
+                  assert(false, "geminiApiKey is NULL");
+                } else {
+                  setState(() {
+                    _canelFAB = true;
+                  });
+                  showBottomSheet(
+                    context: context,
+                    builder: (_) => SizedBox(height: 80, child: InputChat()),
+                  ).closed.then((_) {
+                    setState(() {
+                      _canelFAB = false;
+                    });
+                  });
+                }
+              },
+            ),
+          ],
+        )
+        : FloatingActionButton(
+          mini: true,
+          onPressed: () {
+            setState(() {
+              _canelFAB = false;
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            });
           },
-        ),
-      ],
-    );
+          child: const Icon(Icons.close),
+        );
   }
 }
