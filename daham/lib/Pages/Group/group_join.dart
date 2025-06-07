@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:daham/Provider/group_provider.dart';
@@ -13,9 +15,9 @@ class GroupJoinPage extends StatefulWidget {
 
 class _GroupJoinPageState extends State<GroupJoinPage> {
   final _searchController = TextEditingController();
+  final _inviteCodeController = TextEditingController();
   Group? _foundGroup;
-  final String _currentUserId =
-      'myUserId'; // ⚠️ 추후 FirebaseAuth 등으로 실제 로그인된 유저 ID 대체
+  String? get _currentUserId => FirebaseAuth.instance.currentUser?.uid;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +40,31 @@ class _GroupJoinPageState extends State<GroupJoinPage> {
                 setState(() {
                   _foundGroup = result;
                 });
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _inviteCodeController,
+              decoration: const InputDecoration(
+                labelText: '초대코드로 참가',
+                suffixIcon: Icon(Icons.vpn_key),
+              ),
+              onSubmitted: (code) async {
+                final query =
+                    await FirebaseFirestore.instance
+                        .collection('groups')
+                        .where('inviteCode', isEqualTo: code)
+                        .get();
+                if (query.docs.isNotEmpty) {
+                  final group = Group.fromMap(query.docs.first.data());
+                  setState(() {
+                    _foundGroup = group;
+                  });
+                } else {
+                  setState(() {
+                    _foundGroup = null;
+                  });
+                }
               },
             ),
             const SizedBox(height: 24),
@@ -69,20 +96,24 @@ class _GroupJoinPageState extends State<GroupJoinPage> {
                             style: TextStyle(color: Colors.grey),
                           )
                           : ElevatedButton(
-                            onPressed: () {
-                              groupProvider.joinGroup(
-                                _foundGroup!.id,
-                                _currentUserId,
-                              );
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) =>
-                                          GroupDetailPage(group: _foundGroup!),
-                                ),
-                              );
-                            },
+                            onPressed:
+                                _currentUserId == null
+                                    ? null
+                                    : () {
+                                      groupProvider.joinGroup(
+                                        _foundGroup!.id,
+                                        _currentUserId!,
+                                      );
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (_) => GroupDetailPage(
+                                                group: _foundGroup!,
+                                              ),
+                                        ),
+                                      );
+                                    },
                             child: const Text('그룹 가입하기'),
                           ),
                     ],

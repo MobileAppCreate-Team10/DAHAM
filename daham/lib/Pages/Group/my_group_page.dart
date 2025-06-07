@@ -24,6 +24,18 @@ class MyGroupsPage extends StatelessWidget {
       itemBuilder: (context, index) {
         final group = groups[index];
         return ListTile(
+          leading:
+              group.imageUrl != null && group.imageUrl!.isNotEmpty
+                  ? ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.network(
+                      group.imageUrl!,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                  : const CircleAvatar(child: Icon(Icons.group)),
           title: Text(group.title),
           subtitle: Text('${group.members.length}명 참여 중'),
           onTap: () {
