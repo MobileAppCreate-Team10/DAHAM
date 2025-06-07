@@ -1,15 +1,3 @@
-class TodoItemData {
-  final String title;
-  final String subtitle;
-  final bool checked;
-
-  TodoItemData({
-    required this.title,
-    required this.subtitle,
-    required this.checked,
-  });
-}
-
 enum Priority { low, medium, high }
 
 class PersonalTodoItem {

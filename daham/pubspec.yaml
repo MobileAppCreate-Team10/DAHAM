@@ -28,6 +28,8 @@ dependencies:
   flutter_dotenv: ^5.2.1
   flutter_gemini: ^3.0.0
   google_generative_ai: ^0.4.7
+  grouped_list: ^6.0.0
+  lottie: ^3.0.0
 
 flutter_launcher_icons:
   android: true
@@ -43,3 +45,4 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/lottie/
