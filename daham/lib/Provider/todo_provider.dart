@@ -1,27 +1,60 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:daham/Data/todo.dart';
+import 'package:daham/Provider/export.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TodoState extends ChangeNotifier {
   StreamSubscription? _userTodoSub;
-  Map<String, dynamic>? _todoData;
+  List<PersonalTodoItem>? _todoList;
+
+  List<PersonalTodoItem>? get todoList => _todoList;
 
   void listenTodoData(String uid) {
+    print('listenTodoData called with uid: $uid');
     _userTodoSub?.cancel();
-    _userTodoSub = FirebaseFirestore.instance.doc(uid).snapshots().listen((
-      doc,
-    ) {
-      _todoData = doc.data();
-      notifyListeners();
-    });
+    _userTodoSub = FirebaseFirestore.instance
+        .collection('UserTodo')
+        .doc(uid)
+        .collection('todos')
+        .snapshots()
+        .listen((querySnapshots) {
+          _todoList =
+              querySnapshots.docs
+                  .map((doc) => PersonalTodoItem.fromMap(doc.data()))
+                  .toList();
+
+          notifyListeners();
+        });
   }
 
   void cancel() {
     _userTodoSub?.cancel();
     _userTodoSub = null;
-    _todoData = null;
+    _todoList = null;
+    notifyListeners();
+  }
+
+  Future<void> addTodoinUser(
+    BuildContext context,
+    Map<String, dynamic> todo,
+  ) async {
+    final uid = Provider.of<AppState>(context, listen: false).user?.uid;
+    if (uid != null) {
+      final insertData = {
+        ...todo,
+        'created_at': FieldValue.serverTimestamp(),
+        'complete': false,
+      };
+      final docRef = await FirebaseFirestore.instance
+          .collection('UserTodo')
+          .doc(uid)
+          .collection('todos')
+          .add(insertData);
+      await docRef.update({'id': docRef.id});
+    }
     notifyListeners();
   }
 }
