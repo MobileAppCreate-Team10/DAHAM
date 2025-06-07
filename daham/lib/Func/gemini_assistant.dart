@@ -84,15 +84,6 @@ class GeminiTodoAssistant {
     }
     ```
 
-    User: "그냥 운동해야지"
-    Output: ```json
-    {
-      "task": "운동하기",
-      "due_date": null,
-      "priority": "Medium"
-    }
-    ```
-
     User: "나중에 시간될때 책 읽기"
     Output: ```json
     {
@@ -101,10 +92,7 @@ class GeminiTodoAssistant {
       "priority": "Low"
     }
     ```
-    User: "$userMessage"
-    Output:
-
-    **Examples:**
+    ** Detail Examples:**
 
     User: "운영체제 과제 제출하고 나서 팀플 회의, 장소는 상상랩8"
     Output: ```json
@@ -118,6 +106,21 @@ class GeminiTodoAssistant {
       "priority": "Medium"
     }
     ```
+    User: "모앱개 수업 과제2 제출"
+    Output: ```json
+    {
+      "task": "과제2 제출",
+      "details": {
+        "subject" : 모앱개
+      },
+      "due_date": null,
+      "priority": "Medium"
+    }
+    ```
+
+    User: "$userMessage"
+    Output:
+
     """;
 
     try {
