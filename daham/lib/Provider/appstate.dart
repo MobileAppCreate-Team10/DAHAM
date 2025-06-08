@@ -30,7 +30,7 @@ class AppState extends ChangeNotifier {
       if (user != null) {
         print(_login);
         userState.listenUserDoc(user.uid);
-        // todoState.listenTodoData(user.uid);
+        todoState.listenTodoData(user.uid);
         final userDoc =
             await FirebaseFirestore.instance
                 .collection('users')
