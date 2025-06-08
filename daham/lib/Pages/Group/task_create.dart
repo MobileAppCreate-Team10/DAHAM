@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
@@ -148,8 +149,10 @@ class _TaskCreateModalState extends State<TaskCreateModal> {
               }),
 
               const SizedBox(height: 16),
+
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
                   final newTask = Task(
                     id: const Uuid().v4(),
                     title: _titleController.text,
@@ -157,9 +160,20 @@ class _TaskCreateModalState extends State<TaskCreateModal> {
                     category: _categoryController.text,
                     dueDate: _selectedDueDate,
                     memberProgress: {for (var id in _selectedUserIds) id: 0.0},
+                    creatorId: currentUserId,
                   );
                   widget.group.tasks.add(newTask);
-                  Navigator.pop(context);
+
+                  // Firestore에 tasks 업데이트
+                  await FirebaseFirestore.instance
+                      .collection('groups')
+                      .doc(widget.group.id)
+                      .update({
+                        'tasks':
+                            widget.group.tasks.map((t) => t.toMap()).toList(),
+                      });
+
+                  if (mounted) Navigator.pop(context);
                 },
                 child: const Text('과제 추가'),
               ),

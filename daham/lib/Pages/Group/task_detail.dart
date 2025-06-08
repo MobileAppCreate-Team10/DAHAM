@@ -1,4 +1,4 @@
-// task_detail.dart (신규 파일 생성)
+import 'package:daham/Pages/Group/task_edit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:daham/Data/task.dart';
@@ -51,8 +51,59 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
+    final group = widget.group;
     return Scaffold(
-      appBar: AppBar(title: Text(task.title)),
+      appBar: AppBar(
+        title: Text(task.title),
+        actions: [
+          if (task.creatorId == currentUserId) ...[
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () async {
+                await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => TaskEditModal(task: task, group: group),
+                );
+                setState(() {});
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text('과제 삭제'),
+                        content: const Text('정말로 이 과제를 삭제하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('삭제'),
+                          ),
+                        ],
+                      ),
+                );
+                if (confirm == true) {
+                  group.tasks.removeWhere((t) => t.id == task.id);
+                  await FirebaseFirestore.instance
+                      .collection('groups')
+                      .doc(group.id)
+                      .update({
+                        'tasks': group.tasks.map((t) => t.toMap()).toList(),
+                      });
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -95,7 +146,6 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
 }
 
 // group의 전체 진행률 계산 함수
-// (group_detail.dart 및 task_detail.dart 공통 사용)
 double calculateGroupProgress(Group group) {
   final tasks = group.tasks;
   if (tasks.isEmpty) return 0.0;
