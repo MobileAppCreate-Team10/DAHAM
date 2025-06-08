@@ -12,7 +12,6 @@ import 'dart:math';
 
 class GroupCreatePage extends StatefulWidget {
   const GroupCreatePage({super.key});
-
   @override
   State<GroupCreatePage> createState() => _GroupCreatePageState();
 }
@@ -32,12 +31,14 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
     if (picked != null) setState(() => _imageFile = File(picked.path));
   }
 
+  // 이미지 업로드
   Future<String?> _uploadImage(File file, String groupId) async {
     final ref = FirebaseStorage.instance.ref('group_images/$groupId.jpg');
     await ref.putFile(file);
     return await ref.getDownloadURL();
   }
 
+  // 랜덤 초대코드 생성
   String _generateInviteCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rand = Random();
@@ -163,6 +164,7 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
                   isPrivate: !_isPublic,
                   inviteCode: _inviteCode,
                   imageUrl: imageUrl,
+                  ownerId: currentUserId,
                 );
 
                 // Firestore 저장

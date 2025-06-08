@@ -11,8 +11,9 @@ class Group {
   final bool isPrivate;
   final String? inviteCode;
   final String? imageUrl;
-  late final double progress;
+  double progress;
   final List<Task> tasks;
+  final String ownerId;
 
   Group({
     required this.id,
@@ -23,6 +24,7 @@ class Group {
     required this.members,
     required this.isPublic,
     required this.isPrivate,
+    required this.ownerId,
     this.inviteCode,
     this.imageUrl,
     this.progress = 0.0,
@@ -37,10 +39,12 @@ class Group {
     'maxMembers': maxMembers,
     'members': members,
     'isPublic': isPublic,
+    'isPrivate': isPrivate,
     'inviteCode': inviteCode,
     'imageUrl': imageUrl,
     'progress': progress,
-    // tasks는 Firestore에 맞게 변환 필요
+    'ownerId': ownerId,
+    'tasks': tasks.map((task) => task.toMap()).toList(),
   };
 
   factory Group.fromMap(Map<String, dynamic> map) => Group(
@@ -55,6 +59,10 @@ class Group {
     inviteCode: map['inviteCode'],
     imageUrl: map['imageUrl'],
     progress: map['progress'] ?? 0.0,
-    // tasks는 Firestore에서 변환 필요
+    ownerId: map['ownerId'],
+    tasks:
+        (map['tasks'] as List<dynamic>? ?? [])
+            .map((e) => Task.fromMap(Map<String, dynamic>.from(e)))
+            .toList(),
   );
 }
