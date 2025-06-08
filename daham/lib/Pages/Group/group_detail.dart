@@ -43,14 +43,61 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
   Widget build(BuildContext context) {
     final group = widget.group;
     final isMember = group.members.contains(currentUserId);
+    final isOwner = group.ownerId == currentUserId;
 
     return Scaffold(
-      appBar: AppBar(title: Text(group.title)),
+      appBar: AppBar(
+        title: Text(group.title),
+        actions: [
+          if (isOwner)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder:
+                      (context) => AlertDialog(
+                        title: const Text('그룹 삭제'),
+                        content: const Text('정말로 이 그룹을 삭제하시겠습니까?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('취소'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('삭제'),
+                          ),
+                        ],
+                      ),
+                );
+                if (confirm == true) {
+                  await FirebaseFirestore.instance
+                      .collection('groups')
+                      .doc(group.id)
+                      .delete();
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                }
+              },
+            ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (group.isPrivate && group.inviteCode != null)
+              Card(
+                color: Colors.yellow[100],
+                child: ListTile(
+                  leading: const Icon(Icons.vpn_key),
+                  title: Text('초대코드: ${group.inviteCode!}'),
+                  subtitle: const Text('이 코드를 공유해 그룹에 초대하세요.'),
+                ),
+              ),
             Card(
               child: ListTile(
                 title: Text(group.title),
@@ -75,35 +122,18 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     child: ListTile(
-                      onTap: () async {
-                        await Navigator.push(
+                      title: Text(task.title),
+                      subtitle: Text('카테고리: ${task.category}'),
+                      trailing: Text('${(myProgress * 100).toInt()}%'),
+                      onTap: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
                                 (_) => TaskDetailPage(task: task, group: group),
                           ),
                         );
-                        setState(() {});
                       },
-                      title: Text(
-                        task.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('카테고리: ${task.category}'),
-                          Text(
-                            '진행률: ${(myProgress * 100).toStringAsFixed(0)}%',
-                          ),
-                          Slider(
-                            value: myProgress,
-                            onChanged: null,
-                            min: 0,
-                            max: 1,
-                          ),
-                        ],
-                      ),
                     ),
                   );
                 },
