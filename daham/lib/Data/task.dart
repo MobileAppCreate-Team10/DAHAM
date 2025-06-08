@@ -1,10 +1,11 @@
 class Task {
   final String id;
-  final String title;
-  final String subject;
-  final String category;
-  final DateTime? dueDate;
+  String title;
+  String subject;
+  String category;
+  DateTime? dueDate;
   final Map<String, double> memberProgress;
+  final String? creatorId;
 
   Task({
     required this.id,
@@ -13,6 +14,7 @@ class Task {
     required this.category,
     required this.dueDate,
     required this.memberProgress,
+    required this.creatorId,
   });
 
   Map<String, dynamic> toMap() => {
@@ -22,6 +24,7 @@ class Task {
     'category': category,
     'dueDate': dueDate?.millisecondsSinceEpoch,
     'memberProgress': memberProgress,
+    'creatorId': creatorId,
   };
 
   // Map에서 Task 객체로 변환
@@ -35,5 +38,6 @@ class Task {
             ? DateTime.fromMillisecondsSinceEpoch(map['dueDate'])
             : null,
     memberProgress: Map<String, double>.from(map['memberProgress'] ?? {}),
+    creatorId: map['creatorId'],
   );
 }
