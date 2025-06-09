@@ -6,6 +6,8 @@ import 'package:daham/Provider/appstate.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../Search/search.dart';
+
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
 
@@ -18,11 +20,11 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   final List<Widget> _pages = [
     MyTodoPage(),
+    SearchPage(),
     GroupListPage(),
-    Center(child: Text('SEARCH')),
     MyPage(),
   ];
-  final List<Widget?> _fab = [UserTodoFAB(), GroupFAB(), null, null];
+  final List<Widget?> _fab = [UserTodoFAB(), null, null, null];
 
   final List<PreferredSizeWidget?> _appBar = [null, null, null, MyPageAppBar()];
 
@@ -70,8 +72,8 @@ class BottomNav extends StatelessWidget {
       unselectedItemColor: Colors.grey,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-        BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: '검색'),
+        BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
       ],
     );

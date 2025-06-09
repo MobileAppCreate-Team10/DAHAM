@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'group_create.dart';
-import 'all_group_page.dart';
 import 'my_group_page.dart';
+import '../Friend/my_friend_page.dart';
 
 class GroupListPage extends StatelessWidget {
   const GroupListPage({super.key});
@@ -10,49 +10,42 @@ class GroupListPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Column(
-        children: [
-          const SizedBox(height: 48),
-          const TabBar(tabs: [Tab(text: '전체 그룹'), Tab(text: '나의 그룹')]),
-          const Expanded(child: GroupHome()),
-        ],
+      child: Scaffold(
+        body: Column(
+          children: [
+            const SizedBox(height: 48),
+            const TabBar(tabs: [Tab(text: '나의 그룹'), Tab(text: '나의 친구')]),
+            const Expanded(
+              child: TabBarView(children: [MyGroupsPage(), MyFriendsPage()]),
+            ),
+          ],
+        ),
+        floatingActionButton: Builder(
+          builder: (context) {
+            final tabController = DefaultTabController.of(context);
+            // 나의 그룹 탭(0)일 때만 FAB 노출
+            return AnimatedBuilder(
+              animation: tabController,
+              builder: (context, _) {
+                if (tabController.index == 0) {
+                  return FloatingActionButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const GroupCreatePage(),
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.add),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            );
+          },
+        ),
       ),
     );
-  }
-}
-
-class GroupFAB extends StatelessWidget {
-  const GroupFAB({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton(
-      child: const Icon(Icons.add),
-      onPressed: () {
-        showModalBottomSheet(
-          context: context,
-          builder:
-              (_) => ListTile(
-                title: const Text('그룹 만들기'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const GroupCreatePage()),
-                  );
-                },
-              ),
-        );
-      },
-    );
-  }
-}
-
-class GroupHome extends StatelessWidget {
-  const GroupHome({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const TabBarView(children: [AllGroupsPage(), MyGroupsPage()]);
   }
 }
