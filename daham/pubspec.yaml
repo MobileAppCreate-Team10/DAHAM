@@ -29,6 +29,8 @@ dependencies:
   flutter_dotenv: ^5.2.1
   flutter_gemini: ^3.0.0
   google_generative_ai: ^0.4.7
+  firebase_storage: ^12.4.6
+  image_picker: ^1.0.7
   grouped_list: ^6.0.0
   lottie: ^3.0.0
 
