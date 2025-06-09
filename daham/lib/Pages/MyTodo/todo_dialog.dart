@@ -124,9 +124,8 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
           ),
           Visibility(
             child: DetailSection(
-              details: widget.json['details'] as Map<String, dynamic>,
+              details: (widget.json['details'] ?? {}),
               onChanged: (details) {
-                // details를 json에 반영
                 widget.onChanged({...widget.json, 'details': details});
               },
             ),
