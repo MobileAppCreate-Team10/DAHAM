@@ -3,6 +3,9 @@ import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttermoji/fluttermojiCircleAvatar.dart';
 import 'package:provider/provider.dart';
+import 'package:daham/Data/calendar_page.dart';  // ← 이 경로로 바뀜
+import 'package:daham/Data/chart_page.dart';
+
 
 class MyPage extends StatelessWidget {
   const MyPage({super.key});
@@ -107,7 +110,7 @@ class _FeedSectorState extends State<FeedSector> {
           const TabBar(
             tabs: [
               Tab(text: 'Activity'),
-              Tab(text: '피드2'),
+              Tab(text: '달력',),  // ← 여기에 달력 들어감
               Tab(text: 'Badges'),
             ],
             labelColor: Colors.black, // 필요시 색상 지정
@@ -115,8 +118,23 @@ class _FeedSectorState extends State<FeedSector> {
           Expanded(
             child: TabBarView(
               children: [
-                Center(child: Text('test1')),
-                Center(child: Text('test2')),
+                Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: ChartPage( // ← 클래스 이름!
+  completedPerDay: {
+    DateTime.now().subtract(Duration(days: 6)): 2,
+    DateTime.now().subtract(Duration(days: 5)): 1,
+    DateTime.now().subtract(Duration(days: 4)): 3,
+    DateTime.now().subtract(Duration(days: 3)): 0,
+    DateTime.now().subtract(Duration(days: 2)): 4,
+    DateTime.now().subtract(Duration(days: 1)): 1,
+    DateTime.now(): 5,
+  },
+),
+    ),
+    CalendarPage(),
+    Center(child: Text('test3')),
+                Center(child: CalendarPage()),
                 Center(child: Text('test3')),
               ],
             ),

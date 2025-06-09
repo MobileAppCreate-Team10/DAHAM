@@ -37,4 +37,5 @@ class PersonalTodoItem {
       if (details != null) 'details': details,
     };
   }
+  
 }
