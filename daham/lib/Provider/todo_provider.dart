@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:daham/Data/todo.dart';
 import 'package:daham/Provider/export.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -69,5 +70,51 @@ class TodoState extends ChangeNotifier {
       await docRef.update({'id': docRef.id});
     }
     notifyListeners();
+  }
+
+  Future<void> deleteTodoItem(String id) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final docRef = FirebaseFirestore.instance
+        .collection('UserTodo')
+        .doc(uid)
+        .collection('todos')
+        .doc(id);
+    await docRef.delete();
+  }
+
+  Future<List<String>> fetchCategories() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final doc =
+        await FirebaseFirestore.instance.collection('UserTodo').doc(uid).get();
+    final data = doc.data();
+    if (data != null && data['categories'] != null) {
+      return List<String>.from(data['categories']);
+    }
+    return [];
+  }
+
+  Future<List<String>> fetchSubjects() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final doc =
+        await FirebaseFirestore.instance.collection('UserTodo').doc(uid).get();
+    final data = doc.data();
+    if (data != null && data['subjects'] != null) {
+      return List<String>.from(data['subjects']);
+    }
+    return [];
+  }
+
+  Future<void> addSubject(String subject) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('UserTodo').doc(uid).set({
+      'subjects': FieldValue.arrayUnion([subject]),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> addCategory(String category) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('UserTodo').doc(uid).set({
+      'categories': FieldValue.arrayUnion([category]),
+    }, SetOptions(merge: true));
   }
 }

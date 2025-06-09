@@ -1,5 +1,5 @@
 import 'package:daham/Func/gemini_assistant.dart';
-import 'package:daham/Func/todo_dialog.dart';
+import 'package:daham/Pages/MyTodo/todo_dialog.dart';
 import 'package:flutter/material.dart';
 
 class InputChat extends StatefulWidget {
@@ -27,7 +27,7 @@ class _InputChatState extends State<InputChat> {
       //   "details": {"time": '2시'},
       // };
       _controller.clear();
-      todoDialog(context: context, json: todoJson);
+      showTodoDialog(context: context, json: todoJson);
     } finally {
       setState(() {
         _isLoading = false;
