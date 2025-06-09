@@ -1,5 +1,5 @@
 import 'package:daham/Pages/Group/group_list_page.dart';
-import 'package:daham/Pages/HomePage/userMain_Todo.dart';
+import 'package:daham/Pages/MyTodo/my_todo.dart';
 import 'package:daham/Pages/User/my_page.dart';
 import 'package:daham/Pages/User/profile_setup.dart';
 import 'package:daham/Provider/appstate.dart';
@@ -17,19 +17,14 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _select = 0;
 
   final List<Widget> _pages = [
-    MainPage(),
+    MyTodoPage(),
     GroupListPage(),
+    Center(child: Text('SEARCH')),
     MyPage(),
-    ProfileDetailSetup(),
   ];
   final List<Widget?> _fab = [UserTodoFAB(), GroupFAB(), null, null];
 
-  final List<PreferredSizeWidget?> _appBar = [
-    null,
-    null,
-    null,
-    UserPageAppBar(),
-  ];
+  final List<PreferredSizeWidget?> _appBar = [null, null, null, MyPageAppBar()];
 
   void _onTap(int index) {
     if (Navigator.canPop(context)) Navigator.pop(context);
@@ -51,6 +46,8 @@ class _MainScaffoldState extends State<MainScaffold> {
                 onTap: _onTap,
               ),
               floatingActionButton: _fab[_select],
+              // _select = 3 -> userPage
+              endDrawer: _select == 3 ? MyPageDrawer() : null,
             )
             : ProfileSetup();
       },
@@ -74,8 +71,8 @@ class BottomNav extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
         BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
+        BottomNavigationBarItem(icon: Icon(Icons.search), label: '검색'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
-        BottomNavigationBarItem(icon: Icon(Icons.settings), label: '설정'),
       ],
     );
   }

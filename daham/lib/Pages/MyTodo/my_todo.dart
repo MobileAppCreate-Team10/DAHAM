@@ -1,6 +1,7 @@
 // ignore: file_names
 import 'package:daham/Data/todo.dart';
-import 'package:daham/Pages/test/assistant_chat.dart';
+import 'package:daham/Func/assistant_chat.dart';
+import 'package:daham/Pages/MyTodo/todo_dialog.dart';
 import 'package:daham/Provider/export.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
@@ -11,14 +12,14 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:fluttermoji/fluttermoji.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
-class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+class MyTodoPage extends StatefulWidget {
+  const MyTodoPage({super.key});
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  State<MyTodoPage> createState() => _MyTodoPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MyTodoPageState extends State<MyTodoPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
@@ -26,6 +27,10 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final todoData = Provider.of<TodoState>(context);
     final userState = Provider.of<UserState>(context);
+
+    if (todoData.todoList == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     final todoList = todoData.todoList;
     double completionRate =
         todoList!.isEmpty
@@ -49,7 +54,7 @@ class _MainPageState extends State<MainPage> {
               ],
             ),
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 12),
           TableCalendar(
             firstDay: DateTime.utc(2020, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
@@ -65,7 +70,7 @@ class _MainPageState extends State<MainPage> {
             headerVisible: false,
           ),
 
-          SizedBox(height: 20),
+          SizedBox(height: 12),
           CircularPercentIndicator(
             radius: 60.0,
             lineWidth: 12.0,
@@ -83,9 +88,9 @@ class _MainPageState extends State<MainPage> {
             backgroundColor: Colors.yellow.shade100,
             circularStrokeCap: CircularStrokeCap.round,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 5),
           // 할 일 목록
-          SizedBox(height: 30),
+          SizedBox(height: 20),
           if (todoList != null)
             Expanded(
               child: TodoSector(
@@ -137,7 +142,15 @@ class TodoSector extends StatelessWidget {
             child: CheckboxListTile(
               controlAffinity: ListTileControlAffinity.leading,
               value: todo.complete,
-              title: Text(todo.task),
+              title: Text(
+                todo.task,
+                style: TextStyle(
+                  decoration:
+                      todo.complete
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                ),
+              ),
               onChanged: (value) {
                 todoData.changeCompleteTodo(userState.userData['uid'], todo.id);
               },
@@ -173,22 +186,7 @@ class _UserTodoFABState extends State<UserTodoFAB> {
               child: Icon(Icons.edit),
               label: '직접 추가',
               onTap: () {
-                showDialog(
-                  context: context,
-                  builder:
-                      (_) => AlertDialog(
-                        title: Text('TO DO'),
-                        content: TextFormField(
-                          decoration: InputDecoration(label: Text('Title')),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text('닫기'),
-                          ),
-                        ],
-                      ),
-                );
+                showTodoDialog(context: context, json: null);
               },
             ),
             SpeedDialChild(
