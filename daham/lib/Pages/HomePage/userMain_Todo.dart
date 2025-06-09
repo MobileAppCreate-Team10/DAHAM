@@ -165,66 +165,140 @@ class _UserTodoFABState extends State<UserTodoFAB> {
 
     return _canelFAB != true
         ? SpeedDial(
-          icon: Icons.add,
-          activeIcon: Icons.close,
-          activeBackgroundColor: const Color.fromARGB(255, 0, 0, 0),
-          children: [
-            SpeedDialChild(
-              child: Icon(Icons.edit),
-              label: '직접 추가',
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder:
-                      (_) => AlertDialog(
-                        title: Text('TO DO'),
-                        content: TextFormField(
-                          decoration: InputDecoration(label: Text('Title')),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text('닫기'),
-                          ),
-                        ],
-                      ),
-                );
-              },
-            ),
-            SpeedDialChild(
-              child: Icon(Icons.auto_awesome),
-              label: 'AI assitant',
-              onTap: () async {
-                if (geminiApiKey == null) {
-                  assert(false, "geminiApiKey is NULL");
-                } else {
-                  setState(() {
-                    _canelFAB = true;
-                  });
-                  showBottomSheet(
+            icon: Icons.add,
+            activeIcon: Icons.close,
+            activeBackgroundColor: const Color.fromARGB(255, 0, 0, 0),
+            children: [
+              SpeedDialChild(
+                child: Icon(Icons.edit),
+                label: '직접 추가',
+                onTap: () {
+                  showDialog(
                     context: context,
-                    builder: (_) => SizedBox(height: 80, child: InputChat()),
-                  ).closed.then((_) {
+                    builder: (_) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      title: const Text(
+                        '새로운 리스트 생성',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 제목 입력
+                            TextFormField(
+                              decoration: const InputDecoration(
+                                labelText: '제목',
+                                hintText: '제목을 작성해주세요.',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // 날짜 선택
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    initialValue: '08/17/2025',
+                                    decoration: const InputDecoration(
+                                      labelText: '날짜',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    readOnly: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.calendar_today, size: 28),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // 카테고리 입력
+                            TextFormField(
+                              decoration: InputDecoration(
+                                label: const Text(
+                                  'Category',
+                                  style: TextStyle(color: Colors.deepPurple),
+                                ),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: Colors.deepPurple, width: 2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // 설명 입력
+                            TextFormField(
+                              decoration: const InputDecoration(
+                                labelText: '설명',
+                                hintText: '제목을 작성해주세요.',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                              backgroundColor: Colors.grey.shade200),
+                          child: const Text('취소',
+                              style: TextStyle(color: Colors.black)),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            // TODO: 저장 로직
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue),
+                          child: const Text('생성'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              SpeedDialChild(
+                child: Icon(Icons.auto_awesome),
+                label: 'AI assitant',
+                onTap: () async {
+                  if (geminiApiKey == null) {
+                    assert(false, "geminiApiKey is NULL");
+                  } else {
                     setState(() {
-                      _canelFAB = false;
+                      _canelFAB = true;
                     });
-                  });
-                }
-              },
-            ),
-          ],
-        )
+                    showBottomSheet(
+                      context: context,
+                      builder: (_) =>
+                          SizedBox(height: 80, child: InputChat()),
+                    ).closed.then((_) {
+                      setState(() {
+                        _canelFAB = false;
+                      });
+                    });
+                  }
+                },
+              ),
+            ],
+          )
         : FloatingActionButton(
-          mini: true,
-          onPressed: () {
-            setState(() {
-              _canelFAB = false;
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-            });
-          },
-          child: const Icon(Icons.close),
-        );
+            mini: true,
+            onPressed: () {
+              setState(() {
+                _canelFAB = false;
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                }
+              });
+            },
+            child: const Icon(Icons.close),
+          );
   }
 }
