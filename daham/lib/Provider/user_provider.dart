@@ -39,12 +39,23 @@ class UserState extends ChangeNotifier {
       'uid': uid,
       'userName': userName,
       'bio': bio ?? '',
-      'age': age,
       'interest': interest ?? [],
       'followerCount': 0,
       'followingCount': 0,
       'avatarJson': avatarJson ?? '',
       // 필요시 추가 필드
     });
+    // userTodo에 하나 만들기
+    await FirebaseFirestore.instance.collection('UserTodo').doc(uid).set({
+      'categories': ['SimpleDo', 'Project', 'Study', 'Assingment'],
+      'subjects': [],
+    });
+
+    notifyListeners();
+  }
+
+  Future<void> deleteUserData(String uid) async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+    notifyListeners();
   }
 }

@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:daham/Pages/Login/log_out_dialog.dart';
 import 'package:daham/Provider/appstate.dart';
 import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
@@ -18,12 +19,7 @@ class ProfileSetup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: UserPageAppBar(),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [Text('profile_setup'), ProfileDetailSetup()],
-        ),
-      ),
+      body: Center(child: SafeArea(child: ProfileDetailSetup())),
     );
   }
 }
@@ -34,17 +30,22 @@ class UserPageAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final isAnonymous = appState.user?.isAnonymous ?? false;
     return AppBar(
       title: Text(title),
       centerTitle: true,
       backgroundColor: Colors.blue,
       elevation: 2,
       actions: [
-        IconButton(
-          onPressed:
-              () => Provider.of<AppState>(context, listen: false).signOut(),
-          icon: Icon(Icons.logout),
-        ),
+        if (isAnonymous)
+          IconButton(
+            icon: Icon(Icons.logout),
+            tooltip: '로그아웃',
+            onPressed: () async {
+              showSignOutDialog(context);
+            },
+          ),
       ],
     );
   }
@@ -83,7 +84,7 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
       onPressed: () async {
         if (_formKey.currentState?.saveAndValidate() ?? false) {
           final values = _formKey.currentState!.value;
-          print(values['interests']);
+
           final avatarJson = await FluttermojiFunctions().encodeMySVGtoString();
           final appState = Provider.of<AppState>(context, listen: false);
           final uid = appState.user?.uid;
@@ -97,8 +98,6 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
             );
           }
           appState.init(context);
-
-          print(avatarJson);
         }
       },
       child: Text('Submit'),
@@ -109,7 +108,7 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
         key: _formKey,
         child: Column(
           children: [
-            SizedBox(height: 50),
+            SizedBox(height: 20),
             GestureDetector(
               onTap:
                   () => {
@@ -140,10 +139,10 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
             ),
             SizedBox(height: 12),
             TextFormField(
-              decoration: InputDecoration(label: Text('Introduce')),
+              decoration: InputDecoration(label: Text('BIO')),
               controller: _introduceControlloer,
             ),
-            SizedBox(height: 54),
+            SizedBox(height: 20),
             SubInfoSector(visibleSubInfo: _visibleSubInfo, formKey: _formKey),
             Padding(
               padding: EdgeInsets.fromLTRB(0, 12, 0, 0),

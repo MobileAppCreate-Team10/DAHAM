@@ -39,6 +39,7 @@ class AppState extends ChangeNotifier {
         _newAccount = !userDoc.exists;
       } else {
         userState.clear();
+        todoState.cancel();
         _newAccount = false;
       }
       notifyListeners();
@@ -46,7 +47,32 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    if (user?.isAnonymous == true) await deleteAllData();
     await FirebaseAuth.instance.signOut();
     notifyListeners();
+  }
+
+  Future<void> deleteAllData() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user?.uid)
+          .delete();
+    } catch (e) {
+      print('users 문서 삭제 실패: $e');
+    }
+    try {
+      await FirebaseFirestore.instance
+          .collection('UserTodo')
+          .doc(user?.uid)
+          .delete();
+    } catch (e) {
+      print('UserTodo 문서 삭제 실패: $e');
+    }
+    try {
+      await user?.delete();
+    } catch (e) {
+      print('Firebase Auth 계정 삭제 실패: $e');
+    }
   }
 }

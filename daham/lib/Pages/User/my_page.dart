@@ -1,4 +1,5 @@
-import 'package:daham/Data/user.dart';
+import 'package:daham/Pages/Login/log_out_dialog.dart';
+import 'package:daham/Provider/appstate.dart';
 import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttermoji/fluttermojiCircleAvatar.dart';
@@ -32,30 +33,18 @@ class ProfileSector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      height: 300, // 높이 지정
+      height: 180, // 높이 지정
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Stack(
-                  children: [
-                    FluttermojiCircleAvatar(radius: 55),
-                    Positioned(
-                      child: IconButton(
-                        onPressed: () {
-                          print('Hello');
-                        },
-                        icon: Icon(Icons.edit),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20),
+                FluttermojiCircleAvatar(radius: 55),
+                SizedBox(height: 12),
                 Text('${userData['userName']}'),
               ],
             ),
@@ -63,7 +52,12 @@ class ProfileSector extends StatelessWidget {
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [FollowSector(userData: userData), Text('3')],
+              children: [
+                FollowSector(userData: userData),
+                userData['bio'] == ''
+                    ? Text('아직 소개글이 없습니다')
+                    : Text(userData['bio']),
+              ],
             ),
           ),
         ],
@@ -82,11 +76,20 @@ class FollowSector extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        Column(
-          children: [Text('Follower'), Text('${userData['followerCount']}')],
+        GestureDetector(
+          onTap: () {},
+          child: Column(
+            children: [Text('Follower'), Text('${userData['followerCount']}')],
+          ),
         ),
-        Column(
-          children: [Text('Following'), Text('${userData['followingCount']}')],
+        GestureDetector(
+          onTap: () {},
+          child: Column(
+            children: [
+              Text('Following'),
+              Text('${userData['followingCount']}'),
+            ],
+          ),
         ),
       ],
     );
@@ -138,6 +141,64 @@ class _FeedSectorState extends State<FeedSector> {
                 Center(child: Text('test3')),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MyPageAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const MyPageAppBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBar(
+      title: Text('My Page'),
+      actions: [
+        Builder(
+          builder: (context) {
+            return Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/profileSetting');
+                    // Scaffold.of(context).openEndDrawer();
+                  },
+                ),
+                IconButton(
+                  onPressed: () => showSignOutDialog(context),
+
+                  icon: Icon(Icons.logout),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class MyPageDrawer extends StatelessWidget {
+  const MyPageDrawer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        children: [
+          DrawerHeader(child: Text('설정')),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text('프로필 설정'),
+            onTap: () {
+              Navigator.pushNamed(context, '/profileSetting');
+            },
           ),
         ],
       ),
