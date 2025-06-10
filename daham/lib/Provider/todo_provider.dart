@@ -10,8 +10,10 @@ import 'package:provider/provider.dart';
 class TodoState extends ChangeNotifier {
   StreamSubscription? _userTodoSub;
   List<PersonalTodoItem>? _todoList;
-
   List<PersonalTodoItem>? get todoList => _todoList;
+
+  List<PersonalTodoItem>? _selectedTodoList;
+  List<PersonalTodoItem>? get selectTodoList => _selectedTodoList;
 
   void listenTodoData(String uid) {
     _userTodoSub?.cancel();
@@ -30,6 +32,22 @@ class TodoState extends ChangeNotifier {
 
           notifyListeners();
         });
+  }
+
+  List<PersonalTodoItem>? fetchselectedTodoList(DateTime select) {
+    final selectedStr =
+        "${select.year.toString().padLeft(4, '0')}-"
+        "${select.month.toString().padLeft(2, '0')}-"
+        "${select.day.toString().padLeft(2, '0')}";
+
+    _selectedTodoList =
+        _todoList!.where((todo) {
+          // dueDate가 String(yyyy-MM-dd)라고 가정
+          return todo.dueDate == selectedStr;
+        }).toList();
+
+    notifyListeners();
+    return _selectedTodoList;
   }
 
   void cancel() {
