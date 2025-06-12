@@ -2,6 +2,7 @@
 
 import 'package:daham/Pages/Login/log_out_dialog.dart';
 import 'package:daham/Provider/appstate.dart';
+import 'package:daham/Provider/todo_provider.dart';
 import 'package:daham/Provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -9,8 +10,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttermoji/fluttermoji.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
-
-
 
 class ProfileSetup extends StatelessWidget {
   const ProfileSetup({super.key});
@@ -69,6 +68,9 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
   var _submitStep = false;
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<UserState>(context, listen: false);
+    final String? _userName = userData.userData['userName'];
+    final String? _bio = userData.userData['bio'];
     ElevatedButton nextButton = ElevatedButton(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
@@ -98,6 +100,7 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
             );
           }
           appState.init(context);
+          Navigator.of(context, rootNavigator: true).pop();
         }
       },
       child: Text('Submit'),
@@ -135,18 +138,30 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
                 FormBuilderValidators.required(),
                 FormBuilderValidators.minLength(2),
               ]),
-              controller: _userNameController,
+              controller: _userNameController..text = _userName ?? '',
             ),
             SizedBox(height: 12),
             TextFormField(
               decoration: InputDecoration(label: Text('BIO')),
-              controller: _introduceControlloer,
+              controller: _introduceControlloer..text = _bio ?? '',
             ),
             SizedBox(height: 20),
             SubInfoSector(visibleSubInfo: _visibleSubInfo, formKey: _formKey),
             Padding(
               padding: EdgeInsets.fromLTRB(0, 12, 0, 0),
-              child: _submitStep ? submitButton : nextButton,
+              child:
+                  _submitStep
+                      ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => showSubjectEditDialog(context),
+                            child: Text('과목 편집'),
+                          ),
+                          submitButton,
+                        ],
+                      )
+                      : nextButton,
             ),
           ],
         ),
@@ -206,4 +221,66 @@ class ProfileAvatar extends StatelessWidget {
       ],
     );
   }
+}
+
+void showSubjectEditDialog(BuildContext context) async {
+  final todoState = Provider.of<TodoState>(context, listen: false);
+  List<String> subjects = List.from(await todoState.fetchSubjects());
+
+  TextEditingController controller = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text('과목 편집'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...subjects.map(
+              (subject) => ListTile(
+                title: Text(subject),
+                trailing: IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () async {
+                    await todoState.removeSubject(subject);
+                    Navigator.of(context).pop();
+                    showSubjectEditDialog(context); // 새로고침
+                  },
+                ),
+              ),
+            ),
+            Divider(),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: InputDecoration(hintText: '새 과목 입력'),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: () async {
+                    if (controller.text.trim().isNotEmpty) {
+                      await todoState.addSubject(controller.text.trim());
+                      controller.clear();
+                      Navigator.of(context).pop();
+                      showSubjectEditDialog(context); // 새로고침
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('닫기'),
+          ),
+        ],
+      );
+    },
+  );
 }

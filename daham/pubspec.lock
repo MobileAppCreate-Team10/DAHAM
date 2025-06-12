@@ -293,10 +293,10 @@ packages:
     dependency: "direct main"
     description:
       name: fl_chart
-      sha256: "6b9eb2b3017241d05c482c01f668dd05cc909ec9a0114fdd49acd958ff2432fa"
+      sha256: "5a74434cc83bf64346efb562f1a06eefaf1bcb530dc3d96a104f631a1eff8d79"
       url: "https://pub.dev"
     source: hosted
-    version: "0.64.0"
+    version: "0.65.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -874,6 +874,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  swipeable_tile:
+    dependency: "direct main"
+    description:
+      name: swipeable_tile
+      sha256: "6312b59b14c5ff22bf91aafa64d7e74df5f2322cb206db4c34d9d9946e3e44d4"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   table_calendar:
     dependency: "direct main"
     description:

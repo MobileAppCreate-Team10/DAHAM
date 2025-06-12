@@ -47,7 +47,7 @@ class UserState extends ChangeNotifier {
     });
     // userTodo에 하나 만들기
     await FirebaseFirestore.instance.collection('UserTodo').doc(uid).set({
-      'categories': ['SimpleDo', 'Project', 'Study', 'Assingment'],
+      'categories': ['SimpleDo', 'Project', 'Study', 'Assignment'],
       'subjects': [],
     });
 
