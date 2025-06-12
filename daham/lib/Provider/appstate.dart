@@ -17,9 +17,13 @@ class AppState extends ChangeNotifier {
   User? get user => _user;
 
   bool? _newAccount;
+  bool isReady = false;
   bool? get newAccount => _newAccount;
 
   Future<void> init(BuildContext context) async {
+    _login = null;
+    notifyListeners();
+
     FirebaseAuth.instance.authStateChanges().listen((user) async {
       _user = user;
       _login = user != null;
@@ -42,6 +46,7 @@ class AppState extends ChangeNotifier {
         todoState.cancel();
         _newAccount = false;
       }
+      isReady = true;
       notifyListeners();
     });
   }

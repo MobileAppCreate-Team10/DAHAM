@@ -84,12 +84,3 @@ class _InputChatState extends State<InputChat> {
     return _buildInputBar();
   }
 }
-
-class DialogTODO extends StatelessWidget {
-  const DialogTODO({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
-  }
-}

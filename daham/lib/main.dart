@@ -94,7 +94,16 @@ class _DahamState extends State<Daham> {
             FormBuilderLocalizations.delegate,
           ],
 
-          home: state.login != true ? Login() : MainScaffold(),
+          home:
+              state.login == null
+                  ? Scaffold(body: Center(child: CircularProgressIndicator()))
+                  : (state.login == false
+                      ? Login()
+                      : (!state.isReady
+                          ? Scaffold(body: Center(child: Text('로그인중~')))
+                          : (state.newAccount == true
+                              ? ProfileSetup()
+                              : MainScaffold()))),
           routes: {
             '/profileSetting': (context) => ProfileSetup(),
             '/sign': (context) => Login(),
