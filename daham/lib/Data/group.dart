@@ -14,6 +14,7 @@ class Group {
   double progress;
   final List<Task> tasks;
   final String ownerId;
+  final Map<String, dynamic> memberInfo; // ✅ 추가
 
   Group({
     required this.id,
@@ -25,6 +26,7 @@ class Group {
     required this.isPublic,
     required this.isPrivate,
     required this.ownerId,
+    required this.memberInfo,
     this.inviteCode,
     this.imageUrl,
     this.progress = 0.0,
@@ -45,6 +47,7 @@ class Group {
     'progress': progress,
     'ownerId': ownerId,
     'tasks': tasks.map((task) => task.toMap()).toList(),
+      'memberInfo': memberInfo, // ✅ 여기!
   };
 
   factory Group.fromMap(Map<String, dynamic> map) => Group(
@@ -60,6 +63,7 @@ class Group {
     imageUrl: map['imageUrl'],
     progress: map['progress'] ?? 0.0,
     ownerId: map['ownerId'],
+    memberInfo: Map<String, dynamic>.from(map['memberInfo'] ?? {}), // ✅ 여기!
     tasks:
         (map['tasks'] as List<dynamic>? ?? [])
             .map((e) => Task.fromMap(Map<String, dynamic>.from(e)))
