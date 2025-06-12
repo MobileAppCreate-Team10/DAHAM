@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:daham/Func/function_img.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:daham/Data/group.dart';
@@ -310,6 +311,7 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        buildReceiverImage(group.id, currentUserId ?? ''), // 여기에 추가!
         const Text(
           '📋 그룹 과제 목록',
           style: TextStyle(fontWeight: FontWeight.bold),

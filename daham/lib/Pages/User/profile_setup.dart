@@ -69,8 +69,8 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserState>(context, listen: false);
-    final String? _userName = userData.userData['userName'];
-    final String? _bio = userData.userData['bio'];
+    final String? _userName = userData.userData?['userName'];
+    final String? _bio = userData.userData?['bio'];
     ElevatedButton nextButton = ElevatedButton(
       onPressed: () {
         if (_formKey.currentState!.validate()) {
@@ -138,7 +138,9 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
                 FormBuilderValidators.required(),
                 FormBuilderValidators.minLength(2),
               ]),
-              controller: _userNameController..text = _userName ?? '',
+              controller:
+                  _userNameController
+                    ..text = userData.userData?['userName'] ?? '',
             ),
             SizedBox(height: 12),
             TextFormField(
