@@ -4,6 +4,7 @@ import 'package:daham/Func/assistant_chat.dart';
 import 'package:daham/Func/date_format.dart';
 import 'package:daham/Pages/MyTodo/todo_dialog.dart';
 import 'package:daham/Provider/export.dart';
+import 'package:expansion_tile_group/expansion_tile_group.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:lottie/lottie.dart';
@@ -24,7 +25,7 @@ class MyTodoPage extends StatefulWidget {
 class _MyTodoPageState extends State<MyTodoPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-
+  String todayStr = fromattedDateTime(DateTime.now());
   @override
   Widget build(BuildContext context) {
     final todoData = Provider.of<TodoState>(context);
@@ -63,6 +64,20 @@ class _MyTodoPageState extends State<MyTodoPage> {
                   userState.userData['userName'],
                   style: const TextStyle(fontSize: 16),
                 ),
+                Spacer(),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDay = DateTime.now();
+                      _focusedDay = DateTime.now();
+                    });
+                  },
+                  icon: Icon(Icons.today),
+                  color:
+                      selectedStr == todayStr
+                          ? const Color.fromARGB(255, 42, 141, 255)
+                          : Colors.black,
+                ),
               ],
             ),
           ),
@@ -84,23 +99,35 @@ class _MyTodoPageState extends State<MyTodoPage> {
           ),
 
           SizedBox(height: 12),
-          CircularPercentIndicator(
-            radius: 60.0,
-            lineWidth: 12.0,
-            percent: completionRate,
-            center: SizedBox(
-              width: 120,
-              height: 120,
-              child: Lottie.asset(
-                completionRate == 1
-                    ? 'assets/lottie/star_face.json'
-                    : 'assets/lottie/working.json',
+          filteredList.isEmpty
+              ? Expanded(
+                child: Center(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Lottie.asset('assets/lottie/empty.json'),
+                      Text('어라..? 할일 없어요?!'),
+                    ],
+                  ),
+                ),
+              )
+              : CircularPercentIndicator(
+                radius: 60.0,
+                lineWidth: 12.0,
+                percent: completionRate,
+                center: SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: Lottie.asset(
+                    completionRate == 1
+                        ? 'assets/lottie/star_face.json'
+                        : 'assets/lottie/working.json',
+                  ),
+                ),
+                progressColor: Colors.yellow.shade600,
+                backgroundColor: Colors.yellow.shade100,
+                circularStrokeCap: CircularStrokeCap.round,
               ),
-            ),
-            progressColor: Colors.yellow.shade600,
-            backgroundColor: Colors.yellow.shade100,
-            circularStrokeCap: CircularStrokeCap.round,
-          ),
           const SizedBox(height: 5),
           // 할 일 목록
           SizedBox(height: 20),
@@ -112,8 +139,6 @@ class _MyTodoPageState extends State<MyTodoPage> {
                 userState: userState,
               ),
             ),
-          if (filteredList.isEmpty)
-            const Expanded(child: Center(child: Text('할 일을 다했어서.. 비어있어요!!'))),
         ],
       ),
     );
@@ -173,8 +198,8 @@ class TodoSector extends StatelessWidget {
             direction: SwipeDirection.horizontal,
             color:
                 todo.complete
-                    ? Color.fromARGB(255, 215, 238, 205)
-                    : Color.fromARGB(255, 236, 238, 205),
+                    ? Color.fromARGB(255, 145, 239, 104)
+                    : Color.fromARGB(255, 144, 151, 36),
             shadow: BoxShadow(
               // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.35),
@@ -184,21 +209,40 @@ class TodoSector extends StatelessWidget {
             onSwiped: (SwipeDirection direction) async {
               await todoData.deleteTodoItem(todo.id);
             },
-            child: CheckboxListTile(
-              controlAffinity: ListTileControlAffinity.leading,
-              value: todo.complete,
-              title: Text(
-                todo.task,
-                style: TextStyle(
-                  decoration:
-                      todo.complete
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                ),
-              ),
-              onChanged: (value) {
-                todoData.changeCompleteTodo(userState.userData['uid'], todo.id);
+            child: GestureDetector(
+              onLongPress: () {
+                return showTodoDialog(
+                  context: context,
+                  json: todo.toMap(),
+                  isUpdated: true,
+                );
               },
+              child: ExpansionTileCard(
+                collapsedBackgroundColor:
+                    todo.complete
+                        ? const Color.fromARGB(255, 230, 239, 254)
+                        : const Color.fromARGB(255, 248, 239, 234),
+                title: Text(
+                  todo.task,
+                  style: TextStyle(
+                    decoration:
+                        todo.complete
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                  ),
+                ),
+
+                trailing: Checkbox(
+                  value: todo.complete,
+                  onChanged: (value) {
+                    todoData.changeCompleteTodo(
+                      userState.userData['uid'],
+                      todo.id,
+                    );
+                  },
+                ),
+                children: [TodoDetailItem(todo: todo)],
+              ),
             ),
           ),
       order: GroupedListOrder.DESC,

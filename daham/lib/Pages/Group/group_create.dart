@@ -165,6 +165,13 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
                   inviteCode: _inviteCode,
                   imageUrl: imageUrl,
                   ownerId: currentUserId,
+                  memberInfo: {
+                    currentUserId: {
+                      'name': FirebaseAuth.instance.currentUser?.displayName ?? '사용자',
+                      'email': FirebaseAuth.instance.currentUser?.email ?? '',
+                      'uid': currentUserId,
+                    }
+                  },
                 );
 
                 // Firestore 저장
