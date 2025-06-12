@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:daham/Pages/Group/task_edit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +7,7 @@ import 'package:daham/Data/task.dart';
 import 'package:daham/Data/group.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 
 class TaskDetailPage extends StatefulWidget {
   final Task task;
@@ -18,6 +21,7 @@ class TaskDetailPage extends StatefulWidget {
 
 class _TaskDetailPageState extends State<TaskDetailPage> {
   double? _sliderValue;
+  File? _selectedImage;
   String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
   String? _selectedMemberId;
   Map<String, String> _userNames = {};
@@ -63,6 +67,51 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     }
   }
 
+  Future<void> _markComplete() async {
+    if (currentUserId != null) {
+      final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (picked != null) {
+        setState(() => _selectedImage = File(picked.path));
+      }
+    }
+  }
+
+  Future<void> _submitImage() async {
+    final selectedUserId = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('누구에게 보낼까요?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 12),
+            ...widget.group.memberInfo.entries.map((entry) {
+              final userId = entry.key;
+              final userName = entry.value['name'] ?? '이름 없음';
+              return ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(userName),
+                onTap: () => Navigator.pop(context, userId),
+              );
+            }).toList(),
+          ],
+        );
+      },
+    );
+
+    if (selectedUserId != null) {
+      final userName = widget.group.memberInfo[selectedUserId]?['name'] ?? '알 수 없음';
+
+      // TODO: 실제 Firestore 전송 or Storage 업로드 로직 추가 가능
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$userName 님에게 사진을 보냈습니다!')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final task = widget.task;
@@ -92,21 +141,20 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
-                  builder:
-                      (context) => AlertDialog(
-                        title: const Text('과제 삭제'),
-                        content: const Text('정말로 이 과제를 삭제하시겠습니까?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('취소'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('삭제'),
-                          ),
-                        ],
+                  builder: (context) => AlertDialog(
+                    title: const Text('과제 삭제'),
+                    content: const Text('정말로 이 과제를 삭제하시겠습니까?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('취소'),
                       ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('삭제'),
+                      ),
+                    ],
+                  ),
                 );
                 if (confirm == true) {
                   group.tasks.removeWhere((t) => t.id == task.id);
@@ -195,7 +243,6 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                 ),
               ),
               const SizedBox(height: 32),
-              // 진행률 카드
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -220,40 +267,39 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                         max: 1,
                         divisions: 100,
                         label: '${((_sliderValue ?? 0.0) * 100).toInt()}%',
-                        onChanged:
-                            (value) => setState(() => _sliderValue = value),
+                        onChanged: (value) => setState(() => _sliderValue = value),
                       ),
                       const SizedBox(height: 12),
-                      // 멤버 선택 드롭다운 (userName 매핑)
+                      // 멤버 선택
                       DropdownButtonFormField<String>(
                         value: _selectedMemberId,
                         hint: const Text('멤버 선택'),
-                        items:
-                            widget.group.members.map((uid) {
-                              final name = _userNames[uid] ?? uid;
-                              return DropdownMenuItem(
-                                value: uid,
-                                child: Text(
-                                  uid == currentUserId ? '나 (본인)' : name,
-                                ),
-                              );
-                            }).toList(),
+                        items: widget.group.members.map((uid) {
+                          final name = _userNames[uid] ?? uid;
+                          return DropdownMenuItem(
+                            value: uid,
+                            child: Text(uid == currentUserId ? '나 (본인)' : name),
+                          );
+                        }).toList(),
                         onChanged: (val) {
-                          setState(() {
-                            _selectedMemberId = val;
-                          });
+                          setState(() => _selectedMemberId = val);
                         },
                       ),
                       const SizedBox(height: 16),
-                      // 종이비행기 버튼 (Icons.send 사용)
+                      if (_selectedImage != null) ...[
+                        Image.file(_selectedImage!, height: 160),
+                        const SizedBox(height: 12),
+                      ],
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          icon: const Icon(
-                            Icons.send_rounded,
+                          icon: Icon(
+                            _selectedImage == null ? Icons.photo : Icons.send_rounded,
                             color: Colors.white,
                           ),
-                          label: const Text('종이비행기 보내기'),
+                          label: Text(_selectedImage == null
+                              ? '📷 사진 선택하기'
+                              : '✈️ 종이비행기 보내기'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.indigo,
                             foregroundColor: Colors.white,
@@ -262,23 +308,39 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed:
-                              _selectedMemberId == null
-                                  ? null
-                                  : () async {
-                                    final name =
-                                        _userNames[_selectedMemberId!] ??
-                                        _selectedMemberId!;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('$name님에게 종이비행기를 보냈습니다!'),
-                                      ),
-                                    );
-                                  },
+                          onPressed: () async {
+                            if (_selectedImage == null) {
+                              final picked = await ImagePicker()
+                                  .pickImage(source: ImageSource.gallery);
+                              if (picked != null) {
+                                setState(() => _selectedImage = File(picked.path));
+                              }
+                              return;
+                            }
+
+                            if ((_sliderValue ?? 0.0) < 1.0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('진행률이 100%가 되어야 전송할 수 있어요!')),
+                              );
+                              return;
+                            }
+                            if (_selectedMemberId == null ||
+                                _selectedMemberId == currentUserId) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('다른 그룹원을 선택해주세요!')),
+                              );
+                              return;
+                            }
+
+                            final name = _userNames[_selectedMemberId!] ?? _selectedMemberId!;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$name님에게 종이비행기를 보냈습니다!')),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // 기존 '진행률 저장' 버튼
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -299,15 +361,15 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                   ),
                 ),
               ),
-            ],
+
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
-}
 
-// group의 전체 진행률 계산 함수
 double calculateGroupProgress(Group group) {
   final tasks = group.tasks;
   if (tasks.isEmpty) return 0.0;

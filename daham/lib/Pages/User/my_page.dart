@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:daham/Pages/Login/log_out_dialog.dart';
 import 'package:daham/Pages/User/weekly.dart';
 import 'package:daham/Provider/export.dart';
@@ -16,7 +17,7 @@ class MyPage extends StatelessWidget {
         return Column(
           children: [
             ProfileSector(userData: userState.userData),
-            Expanded(child: FeedSector()), // FeedSector만 Expanded로!
+            Expanded(child: FeedSector(userUid: userState.userData['uid'])),
           ],
         );
       },
@@ -33,7 +34,7 @@ class ProfileSector extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 180, // 높이 지정
+      height: 180,
       child: Row(
         children: [
           Padding(
@@ -95,13 +96,48 @@ class FollowSector extends StatelessWidget {
 }
 
 class FeedSector extends StatefulWidget {
-  const FeedSector({super.key});
+  final String userUid;
+  const FeedSector({super.key, required this.userUid});
 
   @override
   State<FeedSector> createState() => _FeedSectorState();
 }
 
 class _FeedSectorState extends State<FeedSector> {
+  late Future<Map<DateTime, int>> _completedFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _completedFuture = fetchCompletedPerDay(widget.userUid);
+  }
+
+  Future<Map<DateTime, int>> fetchCompletedPerDay(String uid) async {
+    final firestore = FirebaseFirestore.instance;
+    final snapshot = await firestore
+        .collection('UserTodo')
+        .doc(uid)
+        .collection('todos')
+        .where('complete', isEqualTo: true)
+        .get();
+
+    Map<DateTime, int> result = {};
+
+    for (var doc in snapshot.docs) {
+      final details = doc['details'];
+      if (details != null && details['time'] != null) {
+        try {
+          final date = DateTime.parse(details['time']);
+          result[date] = (result[date] ?? 0) + 1;
+        } catch (e) {
+          print('날짜 파싱 오류: ${details['time']}');
+        }
+      }
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -113,7 +149,7 @@ class _FeedSectorState extends State<FeedSector> {
               Tab(text: 'Weekly Do'),
               Tab(text: '달력'), // ← 여기에 달력 들어감
             ],
-            labelColor: Colors.black, // 필요시 색상 지정
+            labelColor: Colors.black,
           ),
           Expanded(
             child: TabBarView(
@@ -162,12 +198,10 @@ class MyPageAppBar extends StatelessWidget implements PreferredSizeWidget {
                   icon: Icon(Icons.edit),
                   onPressed: () {
                     Navigator.pushNamed(context, '/profileSetting');
-                    // Scaffold.of(context).openEndDrawer();
                   },
                 ),
                 IconButton(
                   onPressed: () => showSignOutDialog(context),
-
                   icon: Icon(Icons.logout),
                 ),
               ],
