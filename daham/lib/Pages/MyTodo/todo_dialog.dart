@@ -2,7 +2,6 @@ import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:daham/Provider/export.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-
 import 'package:provider/provider.dart';
 
 const List<DropdownMenuItem<String>> priority = [
@@ -14,6 +13,7 @@ const List<DropdownMenuItem<String>> priority = [
 void showTodoDialog({
   required BuildContext context,
   Map<String, dynamic>? json,
+  bool isUpdated = false,
 }) {
   Map<String, dynamic> result = {};
 
@@ -32,7 +32,7 @@ void showTodoDialog({
       ),
     ),
     btnOk: ElevatedButton(
-      child: Text('Add'),
+      child: isUpdated ? Text('edit') : Text('Add'),
       onPressed: () {
         if ((result['task'] ?? '').toString().trim().isEmpty ||
             (result['due_date'] ?? '').toString().trim().isEmpty) {
@@ -42,14 +42,34 @@ void showTodoDialog({
             title: '제목과 마감일을 모두 입력하세요!',
             btnOkOnPress: () {},
           ).show();
-          // 여기서 return만 하면 다이얼로그가 닫히지 않음!
           return;
         }
-        Provider.of<TodoState>(
-          context,
-          listen: false,
-        ).addTodoinUser(context, result);
-        Navigator.of(context).pop(); // 직접 닫기
+
+        // subject/category를 details에 넣고, 최상위에서는 제거
+        final details = Map<String, dynamic>.from(result['details'] ?? {});
+        if (result['subject'] != null) details['subject'] = result['subject'];
+        if (result['category'] != null)
+          details['category'] = result['category'];
+
+        final saveMap =
+            Map<String, dynamic>.from(result)
+              ..remove('subject')
+              ..remove('category')
+              ..['details'] = details;
+
+        if (isUpdated) {
+          final uid = Provider.of<AppState>(context, listen: false).user?.uid;
+          Provider.of<TodoState>(
+            context,
+            listen: false,
+          ).updateTodo(uid!, json?['id'], saveMap);
+        } else {
+          Provider.of<TodoState>(
+            context,
+            listen: false,
+          ).addTODO(context, saveMap);
+        }
+        Navigator.of(context).pop();
       },
     ),
     btnCancelOnPress: () {},
@@ -139,12 +159,9 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
           SafeArea(
             child: Row(
               children: [
-                SizedBox(
-                  width: 120,
-                  child: Expanded(child: SubjectSelect(context)),
-                ),
+                SizedBox(width: 120, child: SubjectSelect(context)),
                 SizedBox(width: 12),
-                Expanded(child: CategorySelect(context)),
+                Flexible(child: CategorySelect(context)),
               ],
             ),
           ),
@@ -164,16 +181,14 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
             ),
           ),
           // 세부사항(메모, 시간 등)은 아래에
-          Visibility(
-            child: DetailSection(
-              details: _details,
-              onChanged: (details) {
-                setState(() {
-                  _details = details;
-                  _notifyParent();
-                });
-              },
-            ),
+          DetailSection(
+            details: _details,
+            onChanged: (details) {
+              setState(() {
+                _details = details;
+                _notifyParent();
+              });
+            },
           ),
         ],
       ),
@@ -218,7 +233,7 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
                       ),
                       TextButton(
                         onPressed: () {
-                          if (temp.trim().isEmpty) return; // 빈 값이면 추가 안 함
+                          if (temp.trim().isEmpty) return;
                           Navigator.pop(context, temp.trim());
                         },
                         child: Text('확인'),

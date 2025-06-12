@@ -69,10 +69,7 @@ class TodoState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addTodoinUser(
-    BuildContext context,
-    Map<String, dynamic> todo,
-  ) async {
+  Future<void> addTODO(BuildContext context, Map<String, dynamic> todo) async {
     final uid = Provider.of<AppState>(context, listen: false).user?.uid;
     if (uid != null) {
       final insertData = {
@@ -87,6 +84,21 @@ class TodoState extends ChangeNotifier {
           .add(insertData);
       await docRef.update({'id': docRef.id});
     }
+    notifyListeners();
+  }
+
+  Future<void> updateTodo(
+    String uid,
+    String todoId,
+    Map<String, dynamic> updatedData,
+  ) async {
+    final docRef = FirebaseFirestore.instance
+        .collection('UserTodo')
+        .doc(uid)
+        .collection('todos')
+        .doc(todoId);
+
+    await docRef.update(updatedData);
     notifyListeners();
   }
 
