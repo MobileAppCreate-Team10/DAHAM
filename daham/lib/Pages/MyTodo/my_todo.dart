@@ -25,7 +25,7 @@ class MyTodoPage extends StatefulWidget {
 class _MyTodoPageState extends State<MyTodoPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-
+  String todayStr = fromattedDateTime(DateTime.now());
   @override
   Widget build(BuildContext context) {
     final todoData = Provider.of<TodoState>(context);
@@ -63,6 +63,20 @@ class _MyTodoPageState extends State<MyTodoPage> {
                 Text(
                   userState.userData['userName'],
                   style: const TextStyle(fontSize: 16),
+                ),
+                Spacer(),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDay = DateTime.now();
+                      _focusedDay = DateTime.now();
+                    });
+                  },
+                  icon: Icon(Icons.today),
+                  color:
+                      selectedStr == todayStr
+                          ? const Color.fromARGB(255, 42, 141, 255)
+                          : Colors.black,
                 ),
               ],
             ),
@@ -195,31 +209,40 @@ class TodoSector extends StatelessWidget {
             onSwiped: (SwipeDirection direction) async {
               await todoData.deleteTodoItem(todo.id);
             },
-            child: ExpansionTileCard(
-              collapsedBackgroundColor:
-                  todo.complete
-                      ? const Color.fromARGB(255, 230, 239, 254)
-                      : const Color.fromARGB(255, 248, 239, 234),
-              title: Text(
-                todo.task,
-                style: TextStyle(
-                  decoration:
-                      todo.complete
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
+            child: GestureDetector(
+              onLongPress: () {
+                return showTodoDialog(
+                  context: context,
+                  json: todo.toMap(),
+                  isUpdated: true,
+                );
+              },
+              child: ExpansionTileCard(
+                collapsedBackgroundColor:
+                    todo.complete
+                        ? const Color.fromARGB(255, 230, 239, 254)
+                        : const Color.fromARGB(255, 248, 239, 234),
+                title: Text(
+                  todo.task,
+                  style: TextStyle(
+                    decoration:
+                        todo.complete
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                  ),
                 ),
-              ),
 
-              trailing: Checkbox(
-                value: todo.complete,
-                onChanged: (value) {
-                  todoData.changeCompleteTodo(
-                    userState.userData['uid'],
-                    todo.id,
-                  );
-                },
+                trailing: Checkbox(
+                  value: todo.complete,
+                  onChanged: (value) {
+                    todoData.changeCompleteTodo(
+                      userState.userData['uid'],
+                      todo.id,
+                    );
+                  },
+                ),
+                children: [TodoDetailItem(todo: todo)],
               ),
-              children: [TodoDetailItem(todo: todo)],
             ),
           ),
       order: GroupedListOrder.DESC,
