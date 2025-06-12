@@ -1,8 +1,10 @@
 // ignore: file_names
 import 'package:daham/Data/todo.dart';
 import 'package:daham/Func/assistant_chat.dart';
+import 'package:daham/Func/date_format.dart';
 import 'package:daham/Pages/MyTodo/todo_dialog.dart';
 import 'package:daham/Provider/export.dart';
+import 'package:expansion_tile_group/expansion_tile_group.dart';
 import 'package:flutter/material.dart';
 import 'package:grouped_list/grouped_list.dart';
 import 'package:lottie/lottie.dart';
@@ -11,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:fluttermoji/fluttermoji.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:swipeable_tile/swipeable_tile.dart';
 
 class MyTodoPage extends StatefulWidget {
   const MyTodoPage({super.key});
@@ -22,7 +25,7 @@ class MyTodoPage extends StatefulWidget {
 class _MyTodoPageState extends State<MyTodoPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-
+  String todayStr = fromattedDateTime(DateTime.now());
   @override
   Widget build(BuildContext context) {
     final todoData = Provider.of<TodoState>(context);
@@ -31,11 +34,21 @@ class _MyTodoPageState extends State<MyTodoPage> {
     if (todoData.todoList == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    final todoList = todoData.todoList;
+    final todoList = todoData.todoList!;
+    final selectedDate = _selectedDay ?? _focusedDay;
+    final selectedStr = fromattedDateTime(selectedDate);
+
+    final filteredList =
+        todoList.where((todo) {
+          // dueDate가 yyyy-MM-dd 형식의 String이라고 가정
+          return todo.dueDate == selectedStr;
+        }).toList();
+
     double completionRate =
-        todoList!.isEmpty
-            ? 0.0
-            : todoList.where((todo) => todo.complete).length / todoList.length;
+        filteredList.isEmpty
+            ? 1.0
+            : filteredList.where((todo) => todo.complete).length /
+                filteredList.length;
 
     return SafeArea(
       child: Column(
@@ -51,6 +64,20 @@ class _MyTodoPageState extends State<MyTodoPage> {
                   userState.userData['userName'],
                   style: const TextStyle(fontSize: 16),
                 ),
+                Spacer(),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDay = DateTime.now();
+                      _focusedDay = DateTime.now();
+                    });
+                  },
+                  icon: Icon(Icons.today),
+                  color:
+                      selectedStr == todayStr
+                          ? const Color.fromARGB(255, 42, 141, 255)
+                          : Colors.black,
+                ),
               ],
             ),
           ),
@@ -63,6 +90,7 @@ class _MyTodoPageState extends State<MyTodoPage> {
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
                 _selectedDay = selectedDay;
+
                 _focusedDay = focusedDay;
               });
             },
@@ -71,30 +99,42 @@ class _MyTodoPageState extends State<MyTodoPage> {
           ),
 
           SizedBox(height: 12),
-          CircularPercentIndicator(
-            radius: 60.0,
-            lineWidth: 12.0,
-            percent: completionRate,
-            center: SizedBox(
-              width: 120,
-              height: 120,
-              child: Lottie.asset(
-                completionRate == 1
-                    ? 'assets/lottie/star_face.json'
-                    : 'assets/lottie/working.json',
+          filteredList.isEmpty
+              ? Expanded(
+                child: Center(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Lottie.asset('assets/lottie/empty.json'),
+                      Text('어라..? 할일 없어요?!'),
+                    ],
+                  ),
+                ),
+              )
+              : CircularPercentIndicator(
+                radius: 60.0,
+                lineWidth: 12.0,
+                percent: completionRate,
+                center: SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: Lottie.asset(
+                    completionRate == 1
+                        ? 'assets/lottie/star_face.json'
+                        : 'assets/lottie/working.json',
+                  ),
+                ),
+                progressColor: Colors.yellow.shade600,
+                backgroundColor: Colors.yellow.shade100,
+                circularStrokeCap: CircularStrokeCap.round,
               ),
-            ),
-            progressColor: Colors.yellow.shade600,
-            backgroundColor: Colors.yellow.shade100,
-            circularStrokeCap: CircularStrokeCap.round,
-          ),
           const SizedBox(height: 5),
           // 할 일 목록
           SizedBox(height: 20),
-          if (todoList != null)
+          if (filteredList.isNotEmpty)
             Expanded(
               child: TodoSector(
-                todoList: todoList,
+                todoList: filteredList,
                 todoData: todoData,
                 userState: userState,
               ),
@@ -136,24 +176,73 @@ class TodoSector extends StatelessWidget {
             ),
           ),
       itemBuilder:
-          (context, todo) => Card(
-            elevation: 8.0,
-            margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-            child: CheckboxListTile(
-              controlAffinity: ListTileControlAffinity.leading,
-              value: todo.complete,
-              title: Text(
-                todo.task,
-                style: TextStyle(
-                  decoration:
-                      todo.complete
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                ),
-              ),
-              onChanged: (value) {
-                todoData.changeCompleteTodo(userState.userData['uid'], todo.id);
+          (context, todo) => SwipeableTile.card(
+            key: UniqueKey(),
+            backgroundBuilder: (context, direction, progress) {
+              // You can animate background using the progress
+              return AnimatedBuilder(
+                animation: progress,
+                builder: (context, child) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    color:
+                        progress.value > 0.4
+                            ? Color(0xFFed7474)
+                            : Color(0xFFeded98),
+                  );
+                },
+              );
+            },
+            horizontalPadding: 16,
+            verticalPadding: 8,
+            direction: SwipeDirection.horizontal,
+            color:
+                todo.complete
+                    ? Color.fromARGB(255, 145, 239, 104)
+                    : Color.fromARGB(255, 144, 151, 36),
+            shadow: BoxShadow(
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 4,
+              offset: Offset(2, 2),
+            ),
+            onSwiped: (SwipeDirection direction) async {
+              await todoData.deleteTodoItem(todo.id);
+            },
+            child: GestureDetector(
+              onLongPress: () {
+                return showTodoDialog(
+                  context: context,
+                  json: todo.toMap(),
+                  isUpdated: true,
+                );
               },
+              child: ExpansionTileCard(
+                collapsedBackgroundColor:
+                    todo.complete
+                        ? const Color.fromARGB(255, 230, 239, 254)
+                        : const Color.fromARGB(255, 248, 239, 234),
+                title: Text(
+                  todo.task,
+                  style: TextStyle(
+                    decoration:
+                        todo.complete
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                  ),
+                ),
+
+                trailing: Checkbox(
+                  value: todo.complete,
+                  onChanged: (value) {
+                    todoData.changeCompleteTodo(
+                      userState.userData['uid'],
+                      todo.id,
+                    );
+                  },
+                ),
+                children: [TodoDetailItem(todo: todo)],
+              ),
             ),
           ),
       order: GroupedListOrder.DESC,

@@ -1,3 +1,6 @@
+import 'package:expansion_tile_group/expansion_tile_group.dart';
+import 'package:flutter/material.dart';
+
 enum Priority { low, medium, high }
 
 class PersonalTodoItem {
@@ -37,5 +40,27 @@ class PersonalTodoItem {
       if (details != null) 'details': details,
     };
   }
-  
+}
+
+class TodoDetailItem extends StatelessWidget {
+  final PersonalTodoItem todo;
+
+  const TodoDetailItem({super.key, required this.todo});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('마감일: ${todo.dueDate}'),
+          Text('우선순위: ${todo.priority}'),
+          Text('완료여부: ${todo.complete ? "완료" : "미완료"}'),
+          if (todo.details != null)
+            ...todo.details!.entries.map((e) => Text('${e.key}: ${e.value}')),
+        ],
+      ),
+    );
+  }
 }
