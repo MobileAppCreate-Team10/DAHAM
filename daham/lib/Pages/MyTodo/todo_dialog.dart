@@ -1,5 +1,4 @@
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:daham/Provider/export.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -21,19 +20,38 @@ void showTodoDialog({
   AwesomeDialog(
     context: context,
     dialogType: DialogType.question,
-    body: _TodoDialogContent(
-      json: json ?? {},
-      onChanged: (value) {
-        result = value;
+    body: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600),
+        child: _TodoDialogContent(
+          json: json ?? {},
+          onChanged: (value) {
+            result = value;
+          },
+        ),
+      ),
+    ),
+    btnOk: ElevatedButton(
+      child: Text('Add'),
+      onPressed: () {
+        if ((result['task'] ?? '').toString().trim().isEmpty ||
+            (result['due_date'] ?? '').toString().trim().isEmpty) {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.warning,
+            title: '제목과 마감일을 모두 입력하세요!',
+            btnOkOnPress: () {},
+          ).show();
+          // 여기서 return만 하면 다이얼로그가 닫히지 않음!
+          return;
+        }
+        Provider.of<TodoState>(
+          context,
+          listen: false,
+        ).addTodoinUser(context, result);
+        Navigator.of(context).pop(); // 직접 닫기
       },
     ),
-    btnOkOnPress: () {
-      // OK 버튼에서 저장
-      Provider.of<TodoState>(
-        context,
-        listen: false,
-      ).addTodoinUser(context, result);
-    },
     btnCancelOnPress: () {},
   ).show();
 }
@@ -51,6 +69,8 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
   late TextEditingController _taskController;
   late TextEditingController _dueDateController;
   String? _selectedPriority;
+  String? _selectedSubject;
+  String? _selectedCategory;
   late Map<String, dynamic> _details;
 
   @override
@@ -61,7 +81,14 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
       text: widget.json['due_date'] ?? '',
     );
     _selectedPriority = widget.json['priority'] ?? priority[1].value;
-    _details = widget.json['details'] ?? {};
+
+    // details에서 subject, category 분리
+    final detailsRaw = Map<String, dynamic>.from(widget.json['details'] ?? {});
+    _selectedSubject = detailsRaw.remove('subject') ?? widget.json['subject'];
+    _selectedCategory =
+        detailsRaw.remove('category') ?? widget.json['category'];
+    _details = detailsRaw;
+
     _notifyParent();
   }
 
@@ -70,6 +97,8 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
       'task': _taskController.text,
       'due_date': _dueDateController.text,
       'priority': _selectedPriority,
+      'subject': _selectedSubject,
+      'category': _selectedCategory,
       'details': _details,
     });
   }
@@ -84,7 +113,7 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +135,19 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
               DueDateSector(context),
             ],
           ),
-          const SizedBox(height: 15),
+          // 과목 선택
+          SafeArea(
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Expanded(child: SubjectSelect(context)),
+                ),
+                SizedBox(width: 12),
+                Expanded(child: CategorySelect(context)),
+              ],
+            ),
+          ),
           SizedBox(
             width: 120,
             child: FormBuilderDropdown<String>(
@@ -122,16 +163,121 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
               decoration: const InputDecoration(labelText: '우선순위'),
             ),
           ),
+          // 세부사항(메모, 시간 등)은 아래에
           Visibility(
             child: DetailSection(
-              details: (widget.json['details'] ?? {}),
+              details: _details,
               onChanged: (details) {
-                widget.onChanged({...widget.json, 'details': details});
+                setState(() {
+                  _details = details;
+                  _notifyParent();
+                });
               },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget SubjectSelect(BuildContext context) {
+    return FutureBuilder<List<String>>(
+      future: Provider.of<TodoState>(listen: false, context).fetchSubjects(),
+      builder: (context, snapshot) {
+        final subjectList = snapshot.data ?? [];
+        final items = [
+          ...subjectList.map(
+            (subject) => DropdownMenuItem(value: subject, child: Text(subject)),
+          ),
+          const DropdownMenuItem(
+            value: '__add_new__',
+            child: Text('+과목 추가', style: TextStyle(color: Colors.blue)),
+          ),
+        ];
+        return DropdownButtonFormField<String>(
+          value:
+              subjectList.contains(_selectedSubject) ? _selectedSubject : null,
+          items: items,
+          onChanged: (val) async {
+            if (val == '__add_new__') {
+              final newSubject = await showDialog<String>(
+                context: context,
+                builder: (context) {
+                  String temp = '';
+                  return AlertDialog(
+                    title: Text('새 과목 입력'),
+                    content: TextField(
+                      autofocus: true,
+                      onChanged: (v) => temp = v,
+                      decoration: InputDecoration(hintText: '과목명 입력'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, null),
+                        child: Text('취소'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          if (temp.trim().isEmpty) return; // 빈 값이면 추가 안 함
+                          Navigator.pop(context, temp.trim());
+                        },
+                        child: Text('확인'),
+                      ),
+                    ],
+                  );
+                },
+              );
+              if (newSubject != null && newSubject.isNotEmpty) {
+                await Provider.of<TodoState>(
+                  context,
+                  listen: false,
+                ).addSubject(newSubject);
+                setState(() {
+                  _selectedSubject = newSubject;
+                  _notifyParent();
+                });
+              }
+            } else {
+              setState(() {
+                _selectedSubject = val;
+                _notifyParent();
+              });
+            }
+          },
+          decoration: const InputDecoration(labelText: '과목'),
+        );
+      },
+    );
+  }
+
+  Widget CategorySelect(BuildContext context) {
+    return FutureBuilder<List<String>>(
+      future: Provider.of<TodoState>(listen: false, context).fetchCategories(),
+      builder: (context, snapshot) {
+        final categoryList = snapshot.data ?? [];
+        final items = [
+          ...categoryList.map(
+            (category) =>
+                DropdownMenuItem(value: category, child: Text(category)),
+          ),
+          const DropdownMenuItem(
+            value: '__add_new__',
+            child: Text('+ 새 카테고리 추가', style: TextStyle(color: Colors.blue)),
+          ),
+        ];
+        return DropdownButtonFormField<String>(
+          value: _selectedCategory,
+          items: items,
+          onChanged: (val) {
+            setState(() {
+              _selectedCategory = val;
+              _notifyParent();
+            });
+          },
+          isDense: true,
+          decoration: const InputDecoration(labelText: '카테고리'),
+        );
+      },
     );
   }
 
@@ -184,168 +330,104 @@ class DetailSection extends StatefulWidget {
 }
 
 class _DetailSectionState extends State<DetailSection> {
-  late TextEditingController _locationController;
-  late TextEditingController _timeController;
-  late TextEditingController _memoController;
-  late TextEditingController _subjectController;
-  late TextEditingController _categoryController;
+  late Map<String, TextEditingController> _controllers;
 
   @override
   void initState() {
     super.initState();
     final details = widget.details ?? {};
-    _locationController = TextEditingController(
-      text: details['location'] ?? '',
-    );
-    _timeController = TextEditingController(text: details['time'] ?? '');
-    _memoController = TextEditingController(text: details['memo'] ?? '');
-    _subjectController = TextEditingController(text: details['subject'] ?? '');
-    _categoryController = TextEditingController(
-      text: details['category'] ?? '',
-    );
+    _controllers = {};
+    for (final entry in details.entries) {
+      _controllers[entry.key] = TextEditingController(
+        text: entry.value?.toString() ?? '',
+      );
+    }
   }
 
   @override
   void dispose() {
-    _locationController.dispose();
-    _timeController.dispose();
-    _memoController.dispose();
-    _subjectController.dispose();
-    _categoryController.dispose();
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   void _notifyParent() {
-    widget.onChanged?.call({
-      'location': _locationController.text,
-      'time': _timeController.text,
-      'memo': _memoController.text,
-      'subject': _subjectController.text,
-      'category': _categoryController.text,
-    });
+    final result = <String, dynamic>{};
+    for (final entry in _controllers.entries) {
+      result[entry.key] = entry.value.text;
+    }
+    widget.onChanged?.call(result);
   }
 
   @override
   Widget build(BuildContext context) {
-    final todoState = Provider.of<TodoState>(listen: false, context);
     return Column(
       children: [
-        TextField(
-          controller: _locationController,
-          decoration: const InputDecoration(labelText: '장소'),
-          onChanged: (_) => _notifyParent(),
-        ),
-        TextField(
-          controller: _timeController,
-          decoration: const InputDecoration(labelText: '시간'),
-          onChanged: (_) => _notifyParent(),
-        ),
-        TextField(
-          controller: _memoController,
-          decoration: const InputDecoration(labelText: '메모'),
-          onChanged: (_) => _notifyParent(),
-        ),
-        SubjectAndCategorySector(todoState),
-      ],
-    );
-  }
-
-  Row SubjectAndCategorySector(TodoState todoState) {
-    return Row(
-      children: [
-        SubjectForm(todoState),
-
-        Expanded(
-          child: FutureBuilder(
-            builder: (context, snapshot) {
-              final subjectList = snapshot.data ?? [];
-              return DropdownButtonFormField(
-                items:
-                    subjectList
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                        .toList(),
-                onChanged: (val) {
+        ..._controllers.entries.map(
+          (entry) => Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: entry.value,
+                  decoration: InputDecoration(labelText: entry.key),
+                  onChanged: (_) => _notifyParent(),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
                   setState(() {
-                    _categoryController.text = val ?? '';
+                    _controllers.remove(entry.key)?.dispose();
                     _notifyParent();
                   });
                 },
-              );
-            },
-            future: todoState.fetchCategories(),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  Expanded SubjectForm(TodoState todoState) {
-    return Expanded(
-      child: FutureBuilder<List<String>>(
-        future: todoState.fetchSubjects(),
-        builder: (context, snapshot) {
-          final subjectList = snapshot.data ?? [];
-          final items = [
-            ...subjectList.map(
-              (subject) =>
-                  DropdownMenuItem(value: subject, child: Text(subject)),
-            ),
-            const DropdownMenuItem(
-              value: '__add_new__',
-              child: Text('+ 새 과목 추가', style: TextStyle(color: Colors.blue)),
-            ),
-          ];
-          return DropdownButtonFormField<String>(
-            value:
-                subjectList.contains(_subjectController.text)
-                    ? _subjectController.text
-                    : null,
-            items: items,
-            onChanged: (val) async {
-              if (val == '__add_new__') {
-                // 새 과목 입력 다이얼로그 띄우기
-                final newSubject = await showDialog<String>(
-                  context: context,
-                  builder: (context) {
-                    String temp = '';
-                    return AlertDialog(
-                      title: Text('새 과목 추가'),
-                      content: TextField(
-                        autofocus: true,
-                        onChanged: (v) => temp = v,
-                        decoration: InputDecoration(hintText: '과목명 입력'),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: OutlinedButton.icon(
+            icon: Icon(Icons.add),
+            label: Text('필드 추가'),
+            onPressed: () async {
+              final newKey = await showDialog<String>(
+                context: context,
+                builder: (context) {
+                  String temp = '';
+                  return AlertDialog(
+                    title: Text('새 필드명 입력'),
+                    content: TextField(
+                      autofocus: true,
+                      onChanged: (v) => temp = v,
+                      decoration: InputDecoration(hintText: '예: 장소, 메모 등'),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, null),
+                        child: Text('취소'),
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, null),
-                          child: Text('취소'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, temp),
-                          child: Text('추가'),
-                        ),
-                      ],
-                    );
-                  },
-                );
-                if (newSubject != null && newSubject.trim().isNotEmpty) {
-                  await todoState.addSubject(newSubject.trim());
-                  setState(() {
-                    _subjectController.text = newSubject.trim();
-                    _notifyParent();
-                  });
-                }
-              } else {
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, temp),
+                        child: Text('추가'),
+                      ),
+                    ],
+                  );
+                },
+              );
+              if (newKey != null &&
+                  newKey.trim().isNotEmpty &&
+                  !_controllers.containsKey(newKey)) {
                 setState(() {
-                  _subjectController.text = val ?? '';
+                  _controllers[newKey] = TextEditingController();
                   _notifyParent();
                 });
               }
             },
-            decoration: const InputDecoration(labelText: '과목'),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,12 +1,10 @@
 import 'package:daham/Pages/Login/log_out_dialog.dart';
-import 'package:daham/Provider/appstate.dart';
-import 'package:daham/Provider/user_provider.dart';
+import 'package:daham/Pages/User/weekly.dart';
+import 'package:daham/Provider/export.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttermoji/fluttermojiCircleAvatar.dart';
 import 'package:provider/provider.dart';
-import 'package:daham/Data/calendar_page.dart';  // ← 이 경로로 바뀜
-import 'package:daham/Data/chart_page.dart';
-
+import 'package:daham/Data/calendar_page.dart'; // ← 이 경로로 바뀜
 
 class MyPage extends StatelessWidget {
   const MyPage({super.key});
@@ -112,33 +110,33 @@ class _FeedSectorState extends State<FeedSector> {
         children: [
           const TabBar(
             tabs: [
-              Tab(text: 'Activity'),
-              Tab(text: '달력',),  // ← 여기에 달력 들어감
-              Tab(text: 'Badges'),
+              Tab(text: 'Weekly Do'),
+              Tab(text: '달력'), // ← 여기에 달력 들어감
             ],
             labelColor: Colors.black, // 필요시 색상 지정
           ),
           Expanded(
             child: TabBarView(
               children: [
-                Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: ChartPage( // ← 클래스 이름!
-  completedPerDay: {
-    DateTime.now().subtract(Duration(days: 6)): 2,
-    DateTime.now().subtract(Duration(days: 5)): 1,
-    DateTime.now().subtract(Duration(days: 4)): 3,
-    DateTime.now().subtract(Duration(days: 3)): 0,
-    DateTime.now().subtract(Duration(days: 2)): 4,
-    DateTime.now().subtract(Duration(days: 1)): 1,
-    DateTime.now(): 5,
-  },
-),
-    ),
-    CalendarPage(),
-    Center(child: Text('test3')),
+                Consumer<TodoState>(
+                  builder: (context, todos, _) {
+                    final weekMap = todos.fetchThisWeekTodosByWeekday();
+                    // 월(1)~일(7) 순서로 각 요일별 할 일 개수 리스트 생성
+                    final totalTodos = [
+                      for (var i = 1; i <= 7; i++) weekMap[i]?.length ?? 0,
+                    ];
+                    // 완료 개수도 필요하다면 비슷하게 리스트 생성
+                    final completedTodos = [
+                      for (var i = 1; i <= 7; i++)
+                        weekMap[i]?.where((item) => item.complete).length ?? 0,
+                    ];
+                    return WeeklyChart(
+                      totalTodos: totalTodos,
+                      completedTodos: completedTodos,
+                    );
+                  },
+                ),
                 Center(child: CalendarPage()),
-                Center(child: Text('test3')),
               ],
             ),
           ),

@@ -1,6 +1,7 @@
 // ignore: file_names
 import 'package:daham/Data/todo.dart';
 import 'package:daham/Func/assistant_chat.dart';
+import 'package:daham/Func/date_format.dart';
 import 'package:daham/Pages/MyTodo/todo_dialog.dart';
 import 'package:daham/Provider/export.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:fluttermoji/fluttermoji.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:swipeable_tile/swipeable_tile.dart';
 
 class MyTodoPage extends StatefulWidget {
   const MyTodoPage({super.key});
@@ -31,11 +33,21 @@ class _MyTodoPageState extends State<MyTodoPage> {
     if (todoData.todoList == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    final todoList = todoData.todoList;
+    final todoList = todoData.todoList!;
+    final selectedDate = _selectedDay ?? _focusedDay;
+    final selectedStr = fromattedDateTime(selectedDate);
+
+    final filteredList =
+        todoList.where((todo) {
+          // dueDate가 yyyy-MM-dd 형식의 String이라고 가정
+          return todo.dueDate == selectedStr;
+        }).toList();
+
     double completionRate =
-        todoList!.isEmpty
-            ? 0.0
-            : todoList.where((todo) => todo.complete).length / todoList.length;
+        filteredList.isEmpty
+            ? 1.0
+            : filteredList.where((todo) => todo.complete).length /
+                filteredList.length;
 
     return SafeArea(
       child: Column(
@@ -63,6 +75,7 @@ class _MyTodoPageState extends State<MyTodoPage> {
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
                 _selectedDay = selectedDay;
+
                 _focusedDay = focusedDay;
               });
             },
@@ -91,14 +104,16 @@ class _MyTodoPageState extends State<MyTodoPage> {
           const SizedBox(height: 5),
           // 할 일 목록
           SizedBox(height: 20),
-          if (todoList != null)
+          if (filteredList.isNotEmpty)
             Expanded(
               child: TodoSector(
-                todoList: todoList,
+                todoList: filteredList,
                 todoData: todoData,
                 userState: userState,
               ),
             ),
+          if (filteredList.isEmpty)
+            const Expanded(child: Center(child: Text('할 일을 다했어서.. 비어있어요!!'))),
         ],
       ),
     );
@@ -136,9 +151,39 @@ class TodoSector extends StatelessWidget {
             ),
           ),
       itemBuilder:
-          (context, todo) => Card(
-            elevation: 8.0,
-            margin: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+          (context, todo) => SwipeableTile.card(
+            key: UniqueKey(),
+            backgroundBuilder: (context, direction, progress) {
+              // You can animate background using the progress
+              return AnimatedBuilder(
+                animation: progress,
+                builder: (context, child) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    color:
+                        progress.value > 0.4
+                            ? Color(0xFFed7474)
+                            : Color(0xFFeded98),
+                  );
+                },
+              );
+            },
+            horizontalPadding: 16,
+            verticalPadding: 8,
+            direction: SwipeDirection.horizontal,
+            color:
+                todo.complete
+                    ? Color.fromARGB(255, 215, 238, 205)
+                    : Color.fromARGB(255, 236, 238, 205),
+            shadow: BoxShadow(
+              // ignore: deprecated_member_use
+              color: Colors.black.withOpacity(0.35),
+              blurRadius: 4,
+              offset: Offset(2, 2),
+            ),
+            onSwiped: (SwipeDirection direction) async {
+              await todoData.deleteTodoItem(todo.id);
+            },
             child: CheckboxListTile(
               controlAffinity: ListTileControlAffinity.leading,
               value: todo.complete,
