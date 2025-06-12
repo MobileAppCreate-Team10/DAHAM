@@ -31,13 +31,27 @@ void showTodoDialog({
         ),
       ),
     ),
-    btnOkOnPress: () {
-      // OK 버튼에서 저장
-      Provider.of<TodoState>(
-        context,
-        listen: false,
-      ).addTodoinUser(context, result);
-    },
+    btnOk: ElevatedButton(
+      child: Text('Add'),
+      onPressed: () {
+        if ((result['task'] ?? '').toString().trim().isEmpty ||
+            (result['due_date'] ?? '').toString().trim().isEmpty) {
+          AwesomeDialog(
+            context: context,
+            dialogType: DialogType.warning,
+            title: '제목과 마감일을 모두 입력하세요!',
+            btnOkOnPress: () {},
+          ).show();
+          // 여기서 return만 하면 다이얼로그가 닫히지 않음!
+          return;
+        }
+        Provider.of<TodoState>(
+          context,
+          listen: false,
+        ).addTodoinUser(context, result);
+        Navigator.of(context).pop(); // 직접 닫기
+      },
+    ),
     btnCancelOnPress: () {},
   ).show();
 }
@@ -55,6 +69,8 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
   late TextEditingController _taskController;
   late TextEditingController _dueDateController;
   String? _selectedPriority;
+  String? _selectedSubject;
+  String? _selectedCategory;
   late Map<String, dynamic> _details;
 
   @override
@@ -65,7 +81,14 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
       text: widget.json['due_date'] ?? '',
     );
     _selectedPriority = widget.json['priority'] ?? priority[1].value;
-    _details = widget.json['details'] ?? {};
+
+    // details에서 subject, category 분리
+    final detailsRaw = Map<String, dynamic>.from(widget.json['details'] ?? {});
+    _selectedSubject = detailsRaw.remove('subject') ?? widget.json['subject'];
+    _selectedCategory =
+        detailsRaw.remove('category') ?? widget.json['category'];
+    _details = detailsRaw;
+
     _notifyParent();
   }
 
@@ -74,6 +97,8 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
       'task': _taskController.text,
       'due_date': _dueDateController.text,
       'priority': _selectedPriority,
+      'subject': _selectedSubject,
+      'category': _selectedCategory,
       'details': _details,
     });
   }
@@ -110,19 +135,19 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
               DueDateSector(context),
             ],
           ),
-          const SizedBox(height: 15),
           // 과목 선택
           SafeArea(
             child: Row(
               children: [
-                Expanded(child: SubjectSelect(context)),
+                SizedBox(
+                  width: 120,
+                  child: Expanded(child: SubjectSelect(context)),
+                ),
                 SizedBox(width: 12),
                 Expanded(child: CategorySelect(context)),
               ],
             ),
           ),
-
-          const SizedBox(height: 15),
           SizedBox(
             width: 120,
             child: FormBuilderDropdown<String>(
@@ -166,34 +191,25 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
           ),
           const DropdownMenuItem(
             value: '__add_new__',
-            child: Text('+ 새 과목 추가', style: TextStyle(color: Colors.blue)),
+            child: Text('+과목 추가', style: TextStyle(color: Colors.blue)),
           ),
         ];
         return DropdownButtonFormField<String>(
           value:
-              subjectList.contains(_details['subject'])
-                  ? _details['subject']
-                  : null,
+              subjectList.contains(_selectedSubject) ? _selectedSubject : null,
           items: items,
           onChanged: (val) async {
             if (val == '__add_new__') {
-              // 새 과목 추가 다이얼로그
               final newSubject = await showDialog<String>(
                 context: context,
                 builder: (context) {
                   String temp = '';
                   return AlertDialog(
-                    title: Text('새 과목 추가'),
-                    content: SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 300), // 최대 너비 제한
-                        child: TextField(
-                          autofocus: true,
-                          maxLines: 1,
-                          onChanged: (v) => temp = v,
-                          decoration: InputDecoration(hintText: '과목명 입력'),
-                        ),
-                      ),
+                    title: Text('새 과목 입력'),
+                    content: TextField(
+                      autofocus: true,
+                      onChanged: (v) => temp = v,
+                      decoration: InputDecoration(hintText: '과목명 입력'),
                     ),
                     actions: [
                       TextButton(
@@ -201,26 +217,29 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
                         child: Text('취소'),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context, temp),
-                        child: Text('추가'),
+                        onPressed: () {
+                          if (temp.trim().isEmpty) return; // 빈 값이면 추가 안 함
+                          Navigator.pop(context, temp.trim());
+                        },
+                        child: Text('확인'),
                       ),
                     ],
                   );
                 },
               );
-              if (newSubject != null && newSubject.trim().isNotEmpty) {
+              if (newSubject != null && newSubject.isNotEmpty) {
                 await Provider.of<TodoState>(
-                  listen: false,
                   context,
-                ).addSubject(newSubject.trim());
+                  listen: false,
+                ).addSubject(newSubject);
                 setState(() {
-                  _details['subject'] = newSubject.trim();
+                  _selectedSubject = newSubject;
                   _notifyParent();
                 });
               }
             } else {
               setState(() {
-                _details['subject'] = val ?? '';
+                _selectedSubject = val;
                 _notifyParent();
               });
             }
@@ -247,57 +266,13 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
           ),
         ];
         return DropdownButtonFormField<String>(
-          value:
-              categoryList.contains(_details['category'])
-                  ? _details['category']
-                  : null,
+          value: _selectedCategory,
           items: items,
-          onChanged: (val) async {
-            if (val == '__add_new__') {
-              // 새 카테고리 입력 다이얼로그 띄우기
-              final newCategory = await showDialog<String>(
-                context: context,
-                builder: (context) {
-                  String temp = '';
-                  return AlertDialog(
-                    title: Text('새 카테고리 추가'),
-                    content: SingleChildScrollView(
-                      child: TextField(
-                        autofocus: true,
-                        maxLines: 1,
-                        onChanged: (v) => temp = v,
-                        decoration: InputDecoration(hintText: '카테고리명 입력'),
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, null),
-                        child: Text('취소'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, temp),
-                        child: Text('추가'),
-                      ),
-                    ],
-                  );
-                },
-              );
-              if (newCategory != null && newCategory.trim().isNotEmpty) {
-                await Provider.of<TodoState>(
-                  listen: false,
-                  context,
-                ).addCategory(newCategory.trim());
-                setState(() {
-                  _details['category'] = newCategory.trim();
-                  _notifyParent();
-                });
-              }
-            } else {
-              setState(() {
-                _details['category'] = val ?? '';
-                _notifyParent();
-              });
-            }
+          onChanged: (val) {
+            setState(() {
+              _selectedCategory = val;
+              _notifyParent();
+            });
           },
           isDense: true,
           decoration: const InputDecoration(labelText: '카테고리'),

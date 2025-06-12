@@ -98,6 +98,7 @@ class TodoState extends ChangeNotifier {
         .collection('todos')
         .doc(id);
     await docRef.delete();
+    notifyListeners();
   }
 
   Future<List<String>> fetchCategories() async {
@@ -134,5 +135,62 @@ class TodoState extends ChangeNotifier {
     await FirebaseFirestore.instance.collection('UserTodo').doc(uid).set({
       'categories': FieldValue.arrayUnion([category]),
     }, SetOptions(merge: true));
+  }
+
+  Future<void> removeSubject(String subject) async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    await FirebaseFirestore.instance.collection('UserTodo').doc(uid).update({
+      'subjects': FieldValue.arrayRemove([subject]),
+    });
+    await fetchSubjects(); // 필요시 갱신
+    notifyListeners();
+  }
+
+  /// 이번주(월~일) 각 요일별 해야 할 일 개수 반환
+  Map<int, int> fetchThisWeekTodoCountByWeekday() {
+    // 결과: {1: 월요일 개수, 2: 화요일 개수, ..., 7: 일요일 개수}
+    if (_todoList == null) return {for (var i = 1; i <= 7; i++) i: 0};
+
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+
+    // 요일별 개수 초기화
+    final Map<int, int> countMap = {for (var i = 1; i <= 7; i++) i: 0};
+
+    for (final todo in _todoList!) {
+      final due = DateTime.tryParse(todo.dueDate);
+      if (due == null) continue;
+      if (!due.isBefore(monday) && !due.isAfter(sunday)) {
+        countMap[due.weekday] = countMap[due.weekday]! + 1;
+      }
+    }
+    return countMap;
+  }
+
+  /// 이번주(월~일) 각 요일별 PersonalTodoItem 리스트 반환
+  Map<int, List<PersonalTodoItem>> fetchThisWeekTodosByWeekday() {
+    // 결과: {1: [월요일 할일들], 2: [화요일 할일들], ..., 7: [일요일 할일들]}
+    if (_todoList == null) {
+      return {for (var i = 1; i <= 7; i++) i: <PersonalTodoItem>[]};
+    }
+
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final sunday = monday.add(const Duration(days: 6));
+
+    // 요일별 리스트 초기화
+    final Map<int, List<PersonalTodoItem>> map = {
+      for (var i = 1; i <= 7; i++) i: [],
+    };
+
+    for (final todo in _todoList!) {
+      final due = DateTime.tryParse(todo.dueDate);
+      if (due == null) continue;
+      if (!due.isBefore(monday) && !due.isAfter(sunday)) {
+        map[due.weekday]!.add(todo);
+      }
+    }
+    return map;
   }
 }
