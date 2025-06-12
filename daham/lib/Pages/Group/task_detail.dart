@@ -19,11 +19,26 @@ class TaskDetailPage extends StatefulWidget {
 class _TaskDetailPageState extends State<TaskDetailPage> {
   double? _sliderValue;
   String? get currentUserId => FirebaseAuth.instance.currentUser?.uid;
+  String? _selectedMemberId;
+  Map<String, String> _userNames = {};
 
   @override
   void initState() {
     super.initState();
     _sliderValue = widget.task.memberProgress[currentUserId] ?? 0.0;
+    _fetchUserNames();
+  }
+
+  Future<void> _fetchUserNames() async {
+    final usersRef = FirebaseFirestore.instance.collection('users');
+    final userNames = <String, String>{};
+    for (final uid in widget.group.members) {
+      final doc = await usersRef.doc(uid).get();
+      userNames[uid] = doc.data()?['userName'] ?? uid;
+    }
+    setState(() {
+      _userNames = userNames;
+    });
   }
 
   Future<void> _updateProgress() async {
@@ -52,9 +67,13 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
   Widget build(BuildContext context) {
     final task = widget.task;
     final group = widget.group;
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(task.title),
+        backgroundColor: Colors.teal[50],
+        elevation: 0,
         actions: [
           if (task.creatorId == currentUserId) ...[
             IconButton(
@@ -104,41 +123,184 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
           ],
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Subject: ${task.subject}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              'Category: ${task.category}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            Text(
-              'Due Date: ${task.dueDate != null ? DateFormat('yyyy-MM-dd').format(task.dueDate!) : '미지정'}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              '📈 내 진행률',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Slider(
-              value: _sliderValue ?? 0.0,
-              min: 0,
-              max: 1,
-              divisions: 100,
-              label: '${((_sliderValue ?? 0.0) * 100).toInt()}%',
-              onChanged: (value) => setState(() => _sliderValue = value),
-            ),
-            ElevatedButton(
-              onPressed: _updateProgress,
-              child: const Text('진행률 저장'),
-            ),
-          ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // 과제 정보 카드
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                color: Colors.teal[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.assignment, color: Colors.teal),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              task.title,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal[900],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.category, color: Colors.deepPurple),
+                          const SizedBox(width: 8),
+                          Text(
+                            '카테고리: ${task.category}',
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.subject, color: Colors.blueGrey),
+                          const SizedBox(width: 8),
+                          Text(
+                            '과목: ${task.subject}',
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Colors.redAccent,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '마감일: ${task.dueDate != null ? DateFormat('yyyy-MM-dd').format(task.dueDate!) : '미지정'}',
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // 진행률 카드
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '📈 내 진행률',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Slider(
+                        value: _sliderValue ?? 0.0,
+                        min: 0,
+                        max: 1,
+                        divisions: 100,
+                        label: '${((_sliderValue ?? 0.0) * 100).toInt()}%',
+                        onChanged:
+                            (value) => setState(() => _sliderValue = value),
+                      ),
+                      const SizedBox(height: 12),
+                      // 멤버 선택 드롭다운 (userName 매핑)
+                      DropdownButtonFormField<String>(
+                        value: _selectedMemberId,
+                        hint: const Text('멤버 선택'),
+                        items:
+                            widget.group.members.map((uid) {
+                              final name = _userNames[uid] ?? uid;
+                              return DropdownMenuItem(
+                                value: uid,
+                                child: Text(
+                                  uid == currentUserId ? '나 (본인)' : name,
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedMemberId = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      // 종이비행기 버튼 (Icons.send 사용)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.send_rounded,
+                            color: Colors.white,
+                          ),
+                          label: const Text('종이비행기 보내기'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed:
+                              _selectedMemberId == null
+                                  ? null
+                                  : () async {
+                                    final name =
+                                        _userNames[_selectedMemberId!] ??
+                                        _selectedMemberId!;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('$name님에게 종이비행기를 보냈습니다!'),
+                                      ),
+                                    );
+                                  },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // 기존 '진행률 저장' 버튼
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.save),
+                          label: const Text('진행률 저장'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: _updateProgress,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
