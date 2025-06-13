@@ -64,13 +64,16 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Text('공개 여부:'),
+                const Text('그룹 종류'),
                 const SizedBox(width: 10),
                 DropdownButton<bool>(
                   value: _isPublic,
                   items: const [
-                    DropdownMenuItem(value: true, child: Text('공개')),
-                    DropdownMenuItem(value: false, child: Text('비공개(초대코드)')),
+                    DropdownMenuItem(value: true, child: Text('공개(누구나 참여가능)')),
+                    DropdownMenuItem(
+                      value: false,
+                      child: Text('비공개(초대코드 입력시 참여가능)'),
+                    ),
                   ],
                   onChanged: (v) {
                     setState(() {
@@ -167,10 +170,12 @@ class _GroupCreatePageState extends State<GroupCreatePage> {
                   ownerId: currentUserId,
                   memberInfo: {
                     currentUserId: {
-                      'name': FirebaseAuth.instance.currentUser?.displayName ?? '사용자',
+                      'name':
+                          FirebaseAuth.instance.currentUser?.displayName ??
+                          '사용자',
                       'email': FirebaseAuth.instance.currentUser?.email ?? '',
                       'uid': currentUserId,
-                    }
+                    },
                   },
                 );
 
