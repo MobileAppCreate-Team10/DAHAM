@@ -298,6 +298,7 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
 
   // ignore: non_constant_identifier_names
   Row DueDateSector(BuildContext context) {
+    final now = DateTime.now();
     Future<void> pickDatetime(BuildContext context) async {
       FocusScope.of(context).unfocus();
       DateTime? picked = await showDatePicker(
@@ -306,7 +307,7 @@ class _TodoDialogContentState extends State<_TodoDialogContent> {
             _dueDateController.text.isNotEmpty
                 ? DateTime.tryParse(_dueDateController.text) ?? DateTime.now()
                 : DateTime.now(),
-        firstDate: DateTime(DateTime.now().day),
+        firstDate: DateTime(now.year, now.month, now.day),
         lastDate: DateTime(2100),
       );
       if (picked != null) {
