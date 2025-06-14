@@ -121,6 +121,7 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
       padding: const EdgeInsets.all(24.0),
       child: FormBuilder(
         key: _formKey,
+        child: SingleChildScrollView(
         child: Column(
           children: [
             SizedBox(height: 20),
@@ -177,6 +178,7 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
