@@ -39,7 +39,7 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
     final userNames = <String, String>{};
     for (final uid in widget.group.members) {
       final doc = await usersRef.doc(uid).get();
-      userNames[uid] = doc.data()?['userName'] ?? uid;
+      userNames[uid] = doc.data()?['userName'] ?? '';
     }
     setState(() {
       _userNames = userNames;
@@ -285,20 +285,32 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                           value: _selectedMemberId,
                           hint: const Text('멤버 선택'),
                           decoration: const InputDecoration(
-                            contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 12), // ← 높이 조절 핵심
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 18,
+                              horizontal: 12,
+                            ), // ← 높이 조절 핵심
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
                             ),
                           ),
-                          items: widget.group.members.map((uid) {
-                            final name = _userNames[uid] ?? uid;
-                            return DropdownMenuItem(
-                              value: uid,
-                              child: Text(
-                                uid == currentUserId ? '나 (본인)' : name,
-                              ),
-                            );
-                          }).toList(),
+                          items:
+                              widget.group.members
+                                  .where(
+                                    (uid) =>
+                                        (_userNames[uid]?.isNotEmpty ?? false),
+                                  ) // name이 있을 때만
+                                  .map((uid) {
+                                    final name = _userNames[uid]!;
+                                    return DropdownMenuItem(
+                                      value: uid,
+                                      child: Text(
+                                        uid == currentUserId ? '나 (본인)' : name,
+                                      ),
+                                    );
+                                  })
+                                  .toList(),
                           onChanged: (val) {
                             setState(() => _selectedMemberId = val);
                           },
@@ -332,58 +344,80 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed: (_sliderValue == 1.0 &&
-        _selectedMemberId != null &&
-        _selectedMemberId != currentUserId)
-    ? () async {
-        if (_selectedImage == null) {
-          final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-          if (picked != null) {
-            setState(() => _selectedImage = File(picked.path));
-          }
-          return;
-        }
+                          onPressed:
+                              (_sliderValue == 1.0 &&
+                                      _selectedMemberId != null &&
+                                      _selectedMemberId != currentUserId)
+                                  ? () async {
+                                    if (_selectedImage == null) {
+                                      final picked = await ImagePicker()
+                                          .pickImage(
+                                            source: ImageSource.gallery,
+                                          );
+                                      if (picked != null) {
+                                        setState(
+                                          () =>
+                                              _selectedImage = File(
+                                                picked.path,
+                                              ),
+                                        );
+                                      }
+                                      return;
+                                    }
 
-        // 이미지 업로드
-        final url = await uploadImageToStorage(
-          _selectedImage!,
-          widget.group.id,
-          currentUserId!,
-        );
+                                    // 이미지 업로드
+                                    final url = await uploadImageToStorage(
+                                      _selectedImage!,
+                                      widget.group.id,
+                                      currentUserId!,
+                                    );
 
-        if (url != null) {
-          await FirebaseFirestore.instance
-              .collection('groups')
-              .doc(widget.group.id)
-              .collection('images')
-              .add({
-            'sender': currentUserId,
-            'receiver': _selectedMemberId,
-            'url': url,
-            'sentAt': FieldValue.serverTimestamp(),
-          });
-        }
+                                    if (url != null) {
+                                      await FirebaseFirestore.instance
+                                          .collection('groups')
+                                          .doc(widget.group.id)
+                                          .collection('images')
+                                          .add({
+                                            'sender': currentUserId,
+                                            'receiver': _selectedMemberId,
+                                            'url': url,
+                                            'sentAt':
+                                                FieldValue.serverTimestamp(),
+                                          });
+                                    }
 
-        // ✅ 전송 완료 메시지 먼저 보여주기
-        final receiverName = _userNames[_selectedMemberId!] ?? _selectedMemberId!;
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$receiverName님에게 종이비행기를 보냈습니다!')),
-          );
+                                    // ✅ 전송 완료 메시지 먼저 보여주기
+                                    final receiverName =
+                                        _userNames[_selectedMemberId!] ??
+                                        _selectedMemberId!;
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '$receiverName님에게 종이비행기를 보냈습니다!',
+                                          ),
+                                        ),
+                                      );
 
-          // ✅ 잠깐 기다렸다가 이동
-          await Future.delayed(const Duration(milliseconds: 500));
+                                      // ✅ 잠깐 기다렸다가 이동
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 500),
+                                      );
 
-          Navigator.pushReplacementNamed(context, '/group_list_page');
-          // 또는 라우트가 없으면:
-          // Navigator.pushReplacement(
-          //   context,
-          //   MaterialPageRoute(builder: (_) => GroupListPage()),
-          // );
-        }
-      }
-    : null,
-
+                                      Navigator.pushReplacementNamed(
+                                        context,
+                                        '/group_list_page',
+                                      );
+                                      // 또는 라우트가 없으면:
+                                      // Navigator.pushReplacement(
+                                      //   context,
+                                      //   MaterialPageRoute(builder: (_) => GroupListPage()),
+                                      // );
+                                    }
+                                  }
+                                  : null,
                         ),
                       ),
 
