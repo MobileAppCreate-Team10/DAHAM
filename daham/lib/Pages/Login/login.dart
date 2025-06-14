@@ -1,6 +1,9 @@
+import 'package:daham/Provider/appstate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -38,7 +41,9 @@ class _LoginState extends State<Login> {
     setState(() => _isLoading = true);
     try {
       await FirebaseAuth.instance.signInAnonymously();
-      // 로그인 성공 시 자동으로 MainScaffold로 이동됨
+      // 익명 로그인 성공 시 바로 newAccount true로!
+      Provider.of<AppState>(context, listen: false).setNewAccount(true);
+      // 또는 AppState에서 로그인 감지 시 자동으로 newAccount = true 처리
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -59,6 +64,8 @@ class _LoginState extends State<Login> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Lottie.asset('assets/lottie/plane.json'),
+                    SizedBox(height: 29),
                     SizedBox(
                       width: 300,
                       child: ElevatedButton.icon(
