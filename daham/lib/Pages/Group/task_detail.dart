@@ -278,23 +278,33 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                       ),
                       const SizedBox(height: 12),
                       // 멤버 선택
-                      DropdownButtonFormField<String>(
-                        value: _selectedMemberId,
-                        hint: const Text('멤버 선택'),
-                        items:
-                            widget.group.members.map((uid) {
-                              final name = _userNames[uid] ?? uid;
-                              return DropdownMenuItem(
-                                value: uid,
-                                child: Text(
-                                  uid == currentUserId ? '나 (본인)' : name,
-                                ),
-                              );
-                            }).toList(),
-                        onChanged: (val) {
-                          setState(() => _selectedMemberId = val);
-                        },
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.78,
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          value: _selectedMemberId,
+                          hint: const Text('멤버 선택'),
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.symmetric(vertical: 18, horizontal: 12), // ← 높이 조절 핵심
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                            ),
+                          ),
+                          items: widget.group.members.map((uid) {
+                            final name = _userNames[uid] ?? uid;
+                            return DropdownMenuItem(
+                              value: uid,
+                              child: Text(
+                                uid == currentUserId ? '나 (본인)' : name,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() => _selectedMemberId = val);
+                          },
+                        ),
                       ),
+
                       const SizedBox(height: 16),
                       if (_selectedImage != null) ...[
                         Image.file(_selectedImage!, height: 160),
@@ -322,81 +332,58 @@ class _TaskDetailPageState extends State<TaskDetailPage> {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onPressed:
-                              (_sliderValue == 1.0 &&
-                                      _selectedMemberId != null &&
-                                      _selectedMemberId != currentUserId)
-                                  ? () async {
-                                    if ((_sliderValue ?? 0.0) < 1.0) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            '진행률이 100%가 되어야 전송할 수 있어요!',
-                                          ),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    if (_selectedMemberId == null ||
-                                        _selectedMemberId == currentUserId) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('다른 그룹원을 선택해주세요!'),
-                                        ),
-                                      );
-                                      return;
-                                    }
+                          onPressed: (_sliderValue == 1.0 &&
+        _selectedMemberId != null &&
+        _selectedMemberId != currentUserId)
+    ? () async {
+        if (_selectedImage == null) {
+          final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+          if (picked != null) {
+            setState(() => _selectedImage = File(picked.path));
+          }
+          return;
+        }
 
-                                    if (_selectedImage == null) {
-                                      final picked = await ImagePicker()
-                                          .pickImage(
-                                            source: ImageSource.gallery,
-                                          );
-                                      if (picked != null) {
-                                        setState(
-                                          () =>
-                                              _selectedImage = File(
-                                                picked.path,
-                                              ),
-                                        );
-                                      }
-                                      return;
-                                    }
+        // 이미지 업로드
+        final url = await uploadImageToStorage(
+          _selectedImage!,
+          widget.group.id,
+          currentUserId!,
+        );
 
-                                    // 여기서 이미지 업로드
-                                    final url = await uploadImageToStorage(
-                                      _selectedImage!,
-                                      widget.group.id,
-                                      currentUserId!,
-                                    );
-                                    if (url != null) {
-                                      await FirebaseFirestore.instance
-                                          .collection('groups')
-                                          .doc(widget.group.id)
-                                          .collection('images')
-                                          .add({
-                                            'sender': currentUserId,
-                                            'receiver': _selectedMemberId,
-                                            'url': url,
-                                            'sentAt':
-                                                FieldValue.serverTimestamp(),
-                                          });
-                                    }
+        if (url != null) {
+          await FirebaseFirestore.instance
+              .collection('groups')
+              .doc(widget.group.id)
+              .collection('images')
+              .add({
+            'sender': currentUserId,
+            'receiver': _selectedMemberId,
+            'url': url,
+            'sentAt': FieldValue.serverTimestamp(),
+          });
+        }
 
-                                    final name =
-                                        _userNames[_selectedMemberId!] ??
-                                        _selectedMemberId!;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('$name님에게 종이비행기를 보냈습니다!'),
-                                      ),
-                                    );
-                                  }
-                                  : null,
+        // ✅ 전송 완료 메시지 먼저 보여주기
+        final receiverName = _userNames[_selectedMemberId!] ?? _selectedMemberId!;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$receiverName님에게 종이비행기를 보냈습니다!')),
+          );
+
+          // ✅ 잠깐 기다렸다가 이동
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          Navigator.pushReplacementNamed(context, '/group_list_page');
+          // 또는 라우트가 없으면:
+          // Navigator.pushReplacement(
+          //   context,
+          //   MaterialPageRoute(builder: (_) => GroupListPage()),
+          // );
+        }
+      }
+    : null,
+
                         ),
                       ),
 
