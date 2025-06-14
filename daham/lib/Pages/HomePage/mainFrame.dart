@@ -73,7 +73,7 @@ class BottomNav extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
         BottomNavigationBarItem(icon: Icon(Icons.search), label: '검색'),
-        BottomNavigationBarItem(icon: Icon(Icons.group), label: '그룹'),
+        BottomNavigationBarItem(icon: Icon(Icons.group), label: '커뮤니티'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: '프로필'),
       ],
     );
