@@ -133,7 +133,7 @@ class _TaskCreateModalState extends State<TaskCreateModal> {
               ...members.map((userId) {
                 return CheckboxListTile(
                   value: _selectedUserIds.contains(userId),
-                  title: Text(_userNames[userId] ?? userId),
+                  title: Text(_userNames[userId] ?? '불러오는 중'),
                   onChanged: (checked) {
                     setState(() {
                       if (checked == true) {
