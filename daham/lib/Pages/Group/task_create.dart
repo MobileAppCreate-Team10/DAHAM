@@ -35,7 +35,7 @@ class _TaskCreateModalState extends State<TaskCreateModal> {
     final userNames = <String, String>{};
     for (final uid in members) {
       final doc = await usersRef.doc(uid).get();
-      userNames[uid] = doc.data()?['userName'] ?? uid;
+      userNames[uid] = doc.data()?['userName'] ?? 'Unknown User';
     }
     setState(() {
       _userNames = userNames;
