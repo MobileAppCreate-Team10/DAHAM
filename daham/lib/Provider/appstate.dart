@@ -80,4 +80,8 @@ class AppState extends ChangeNotifier {
       print('Firebase Auth 계정 삭제 실패: $e');
     }
   }
+
+  void setNewAccount(bool bool) {
+    _newAccount = true;
+  }
 }

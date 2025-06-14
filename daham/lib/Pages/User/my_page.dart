@@ -16,8 +16,10 @@ class MyPage extends StatelessWidget {
       builder: (context, userState, _) {
         return Column(
           children: [
-            ProfileSector(userData: userState.userData),
-            Expanded(child: FeedSector(userUid: userState.userData['uid'])),
+            ProfileSector(userData: userState.userData ?? {}),
+            Expanded(
+              child: FeedSector(userUid: userState.userData?['uid'] ?? ''),
+            ),
           ],
         );
       },
@@ -32,6 +34,8 @@ class ProfileSector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userName = userData?['userName'] ?? '익명';
+    final bio = userData?['bio'] ?? '';
     return SizedBox(
       width: double.infinity,
       height: 180,
@@ -44,7 +48,7 @@ class ProfileSector extends StatelessWidget {
               children: [
                 FluttermojiCircleAvatar(radius: 55),
                 SizedBox(height: 12),
-                Text('${userData['userName']}'),
+                Text(userName),
               ],
             ),
           ),
@@ -53,9 +57,7 @@ class ProfileSector extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 FollowSector(userData: userData),
-                userData['bio'] == ''
-                    ? Text('아직 소개글이 없습니다')
-                    : Text(userData['bio']),
+                bio == '' ? Text('아직 소개글이 없습니다') : Text(bio),
               ],
             ),
           ),
@@ -72,23 +74,18 @@ class FollowSector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final followerCount = userData?['followerCount'] ?? 0;
+    final followingCount = userData?['followingCount'] ?? 0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         GestureDetector(
           onTap: () {},
-          child: Column(
-            children: [Text('Follower'), Text('${userData['followerCount']}')],
-          ),
+          child: Column(children: [Text('Follower'), Text('$followerCount')]),
         ),
         GestureDetector(
           onTap: () {},
-          child: Column(
-            children: [
-              Text('Following'),
-              Text('${userData['followingCount']}'),
-            ],
-          ),
+          child: Column(children: [Text('Following'), Text('$followingCount')]),
         ),
       ],
     );
@@ -114,12 +111,13 @@ class _FeedSectorState extends State<FeedSector> {
 
   Future<Map<DateTime, int>> fetchCompletedPerDay(String uid) async {
     final firestore = FirebaseFirestore.instance;
-    final snapshot = await firestore
-        .collection('UserTodo')
-        .doc(uid)
-        .collection('todos')
-        .where('complete', isEqualTo: true)
-        .get();
+    final snapshot =
+        await firestore
+            .collection('UserTodo')
+            .doc(uid)
+            .collection('todos')
+            .where('complete', isEqualTo: true)
+            .get();
 
     Map<DateTime, int> result = {};
 

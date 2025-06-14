@@ -63,9 +63,17 @@ class ProfileDetailSetup extends StatefulWidget {
 class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
   final _formKey = GlobalKey<FormBuilderState>();
   final _userNameController = TextEditingController();
-  final _introduceControlloer = TextEditingController();
+  final _introduceController = TextEditingController();
   var _visibleSubInfo = false;
   var _submitStep = false;
+  @override
+  void initState() {
+    super.initState();
+    final userData = Provider.of<UserState>(context, listen: false);
+    _userNameController.text = userData.userData?['userName'] ?? '';
+    _introduceController.text = userData.userData?['bio'] ?? '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserState>(context, listen: false);
@@ -92,15 +100,19 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
           final uid = appState.user?.uid;
           if (uid != null) {
             await Provider.of<UserState>(context, listen: false).registerUser(
-              bio: _introduceControlloer.text,
+              bio: _introduceController.text,
               uid: uid,
               userName: _userNameController.text,
               avatarJson: avatarJson,
-              interest: values['interests'], // Pass the selected interests
+              interest: values['interests'],
             );
+            await appState.init(context); // 비동기 초기화
+            // newAccount false로 변경 (필요시)
+            // Provider.of<AppState>(context, listen: false).setNewAccount(false);
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
-          appState.init(context);
-          Navigator.of(context, rootNavigator: true).pop();
         }
       },
       child: Text('Submit'),
@@ -138,14 +150,12 @@ class _ProfileDetailSetupState extends State<ProfileDetailSetup> {
                 FormBuilderValidators.required(),
                 FormBuilderValidators.minLength(2),
               ]),
-              controller:
-                  _userNameController
-                    ..text = userData.userData?['userName'] ?? '',
+              controller: _userNameController,
             ),
             SizedBox(height: 12),
             TextFormField(
               decoration: InputDecoration(label: Text('BIO')),
-              controller: _introduceControlloer..text = _bio ?? '',
+              controller: _introduceController,
             ),
             SizedBox(height: 20),
             SubInfoSector(visibleSubInfo: _visibleSubInfo, formKey: _formKey),
