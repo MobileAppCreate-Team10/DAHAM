@@ -138,6 +138,13 @@ class _GroupDetailPageState extends State<GroupDetailPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
+                        group.description ?? '그룹 설명이 없습니다.',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: Colors.indigo[800],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
                         '현재 ${group.members.length}명 참여 중',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: Colors.indigo[700],

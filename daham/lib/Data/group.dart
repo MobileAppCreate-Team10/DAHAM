@@ -47,7 +47,7 @@ class Group {
     'progress': progress,
     'ownerId': ownerId,
     'tasks': tasks.map((task) => task.toMap()).toList(),
-      'memberInfo': memberInfo, // ✅ 여기!
+    'memberInfo': memberInfo,
   };
 
   factory Group.fromMap(Map<String, dynamic> map) => Group(
