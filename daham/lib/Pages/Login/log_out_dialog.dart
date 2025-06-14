@@ -12,8 +12,15 @@ void showSignOutDialog(BuildContext context) {
       title: 'Sign Out',
       desc:
           'Are you sure you want to sign out? Anonymous User Data will delete!',
-      btnOkOnPress: () {
-        appState.signOut();
+      btnOkOnPress: () async {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => const Center(child: CircularProgressIndicator()),
+        );
+        await appState.signOut();
+        Navigator.of(context, rootNavigator: true).pop(); // 로딩 닫기
+        Navigator.pushReplacementNamed(context, '/');
       },
       btnCancelOnPress: () {},
     ).show();
@@ -25,8 +32,15 @@ void showSignOutDialog(BuildContext context) {
     dialogType: DialogType.warning,
     title: 'Sign Out',
     desc: 'Are you sure you want to sign out?',
-    btnOkOnPress: () {
-      appState.signOut();
+    btnOkOnPress: () async {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+      await appState.signOut();
+      Navigator.of(context, rootNavigator: true).pop(); // 로딩 닫기
+      Navigator.pushReplacementNamed(context, '/');
     },
     btnCancelOnPress: () {},
   ).show();
