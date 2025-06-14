@@ -145,7 +145,7 @@ class _FeedSectorState extends State<FeedSector> {
           const TabBar(
             tabs: [
               Tab(text: 'Weekly Do'),
-              Tab(text: '달력'), // ← 여기에 달력 들어감
+              // Tab(text: '달력'), // ← 여기에 달력 들어감
             ],
             labelColor: Colors.black,
           ),
@@ -170,7 +170,7 @@ class _FeedSectorState extends State<FeedSector> {
                     );
                   },
                 ),
-                Center(child: CalendarPage()),
+                // Center(child: CalendarPage()),
               ],
             ),
           ),
